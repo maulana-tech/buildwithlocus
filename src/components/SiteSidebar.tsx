@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, User, Link as LinkIcon, ShoppingCart, Trash2, Eye, EyeOff, Palette, Type, Layout as LayoutIcon, Globe } from 'lucide-react';
-import { SiteConfig, Block } from '@/agents/state';
+import { User, Link as LinkIcon, ShoppingCart, Trash2, Eye, Palette, Type, Layout as LayoutIcon } from 'lucide-react';
+import type { SiteConfig, ProfileBlock, LinkBlock, CheckoutBlock } from '@/agents/state';
+
+type ThemeType = SiteConfig['theme'];
+type FontType = SiteConfig['font'];
+type LayoutType = SiteConfig['layout'];
 
 interface SiteSidebarProps {
   site: SiteConfig;
@@ -15,20 +19,14 @@ export const SiteSidebar: React.FC<SiteSidebarProps> = ({ site, onChange, onPrev
   const [activeTab, setActiveTab] = useState<'content' | 'design'>('content');
 
   const addBlock = (type: "profile" | "link" | "checkout") => {
-    const newBlock: any = {
-      id: Math.random().toString(36).substr(2, 9),
-      type,
-      visible: true,
-    };
+    let newBlock: ProfileBlock | LinkBlock | CheckoutBlock;
 
     if (type === 'profile') {
-      newBlock.name = 'New Name';
-      newBlock.bio = 'New Bio';
+      newBlock = { id: Math.random().toString(36).substr(2, 9), type, visible: true, name: 'New Name', bio: 'New Bio' };
     } else if (type === 'link') {
-      newBlock.title = 'New Link';
-      newBlock.url = 'https://';
-    } else if (type === 'checkout') {
-      newBlock.widget_id = 'wgt_default';
+      newBlock = { id: Math.random().toString(36).substr(2, 9), type, visible: true, title: 'New Link', url: 'https://' };
+    } else {
+      newBlock = { id: Math.random().toString(36).substr(2, 9), type, visible: true, widget_id: 'wgt_default' };
     }
 
     onChange({ ...site, blocks: [...site.blocks, newBlock] });
@@ -38,7 +36,7 @@ export const SiteSidebar: React.FC<SiteSidebarProps> = ({ site, onChange, onPrev
     onChange({ ...site, blocks: site.blocks.filter(b => b.id !== id) });
   };
 
-  const updateBlock = (id: string, updates: any) => {
+  const updateBlock = (id: string, updates: Record<string, string>) => {
     onChange({
       ...site,
       blocks: site.blocks.map(b => b.id === id ? { ...b, ...updates } : b)
@@ -133,7 +131,7 @@ export const SiteSidebar: React.FC<SiteSidebarProps> = ({ site, onChange, onPrev
                 {['modern', 'retro', 'dark', 'glass', 'neon'].map(t => (
                   <button 
                     key={t}
-                    onClick={() => onChange({ ...site, theme: t as any })}
+                    onClick={() => onChange({ ...site, theme: t as ThemeType })}
                     style={{ 
                       padding: '12px', borderRadius: '10px', border: site.theme === t ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
                       background: 'rgba(255,255,255,0.03)', color: 'white', cursor: 'pointer', textTransform: 'capitalize', fontSize: '0.8rem'
@@ -153,7 +151,7 @@ export const SiteSidebar: React.FC<SiteSidebarProps> = ({ site, onChange, onPrev
                 {['inter', 'playfair', 'mono', 'space'].map(f => (
                   <button 
                     key={f}
-                    onClick={() => onChange({ ...site, font: f as any })}
+                    onClick={() => onChange({ ...site, font: f as FontType })}
                     style={{ 
                       padding: '12px', borderRadius: '10px', border: site.font === f ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
                       background: 'rgba(255,255,255,0.03)', color: 'white', cursor: 'pointer', textTransform: 'capitalize', fontSize: '0.8rem',
@@ -174,7 +172,7 @@ export const SiteSidebar: React.FC<SiteSidebarProps> = ({ site, onChange, onPrev
                 {['stack', 'grid'].map(l => (
                   <button 
                     key={l}
-                    onClick={() => onChange({ ...site, layout: l as any })}
+                    onClick={() => onChange({ ...site, layout: l as LayoutType })}
                     style={{ 
                       flex: 1, padding: '12px', borderRadius: '10px', border: site.layout === l ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
                       background: 'rgba(255,255,255,0.03)', color: 'white', cursor: 'pointer', textTransform: 'capitalize', fontSize: '0.8rem'
