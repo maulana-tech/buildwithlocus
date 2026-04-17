@@ -1,0 +1,16 @@
+graph TD
+    A[Merchant] -->|Access Studio| B[Website Builder]
+    B -->|Configures| C{Site Configuration}
+    C -->|Section 1| D[Profile Block]
+    C -->|Section 2| E[Link Blocks]
+    C -->|Section 3| F[Checkout Widget Block]
+    C -->|Branding| G[Themes & Custom CSS]
+    
+    C -->|Saves| H[Site Database/State]
+    H -->|Publishes| I[Live URL /s/:id]
+    
+    I -->|User visits| J[Public Website]
+    J -->|Interacts| K[Locus Checkout Flow]
+    
+    K -->|Webhook| L[Analytics Agent]
+    L -->|Updates| M[Merchant Dashboard]
