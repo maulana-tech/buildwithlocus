@@ -1,0 +1,13 @@
+{
+  "services": {
+    "web": {
+      "path": ".",
+      "port": 8080,
+      "healthCheck": "/",
+      "env": {
+        "LOCUS_API_KEY": "${{LOCUS_API_KEY}}",
+        "LOCUS_WEBHOOK_SECRET": "${{LOCUS_WEBHOOK_SECRET}}"
+      }
+    }
+  }
+}
