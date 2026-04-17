@@ -27,6 +27,10 @@ function useScrollReveal() {
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const reveal = () => {
+      const children = el.querySelectorAll('.sr, .sr-left, .sr-right, .sr-scale');
+      children.forEach((child) => child.classList.add('sr-visible'));
+    };
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -36,11 +40,12 @@ function useScrollReveal() {
           }
         });
       },
-      { threshold: 0.15 }
+      { threshold: 0.05, rootMargin: '0px 0px -40px 0px' }
     );
-    const children = el.querySelectorAll('.sr');
+    const children = el.querySelectorAll('.sr, .sr-left, .sr-right, .sr-scale');
     children.forEach((child) => observer.observe(child));
-    return () => observer.disconnect();
+    const fallback = setTimeout(reveal, 3000);
+    return () => { observer.disconnect(); clearTimeout(fallback); };
   }, []);
   return ref;
 }
@@ -226,7 +231,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="sr-scale" style={{ background: '#111113', border: '1px solid #1e1e22', position: 'relative', overflow: 'hidden' }}>
+            <div className="sr" style={{ background: '#111113', border: '1px solid #1e1e22', position: 'relative', overflow: 'hidden' }}>
               {/* Browser chrome */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderBottom: '1px solid #1e1e22', background: '#09090b' }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} />
