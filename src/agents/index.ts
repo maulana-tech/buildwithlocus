@@ -16,8 +16,3 @@ export function startAgents() {
 
   return { orchestrator, builder, payment, analytics };
 }
-
-// If running directly (e.g. via ts-node or similar)
-if (typeof require !== 'undefined' && require.main === module) {
-  startAgents();
-}
