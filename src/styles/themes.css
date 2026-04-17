@@ -1,0 +1,67 @@
+/* Font Families */
+.font-inter { font-family: 'Inter', sans-serif; }
+.font-playfair { font-family: 'Playfair Display', serif; }
+.font-mono { font-family: 'Space Mono', monospace; }
+.font-space { font-family: 'Space Grotesk', sans-serif; }
+
+/* Themes */
+
+/* Modern */
+.theme-modern {
+  --site-bg: #f8f9fa;
+  --site-text: #1a1a2e;
+  --block-bg: #ffffff;
+  --block-border: #e2e8f0;
+  --block-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Retro */
+.theme-retro {
+  --site-bg: #fdf6e3;
+  --site-text: #657b83;
+  --block-bg: #eee8d5;
+  --block-border: #93a1a1;
+  --block-shadow: 4px 4px 0px #586e75;
+}
+
+/* Dark */
+.theme-dark {
+  --site-bg: #0f172a;
+  --site-text: #f8fafc;
+  --block-bg: #1e293b;
+  --block-border: #334155;
+  --block-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+/* Glass */
+.theme-glass {
+  --site-bg: #0a0a0c;
+  --site-text: #ffffff;
+  --block-bg: rgba(255, 255, 255, 0.05);
+  --block-border: rgba(255, 255, 255, 0.1);
+  --block-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Neon */
+.theme-neon {
+  --site-bg: #000000;
+  --site-text: #00ffcc;
+  --block-bg: #0a0a0a;
+  --block-border: #00ffcc;
+  --block-shadow: 0 0 15px #00ffcc;
+}
+
+/* Layouts */
+.layout-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
