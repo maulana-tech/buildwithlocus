@@ -12,7 +12,7 @@ export type ProfileNodeData = {
   onChange?: (field: string, value: string) => void;
 };
 
-function ProfileNodeComponent({ data, id }: NodeProps & { data: ProfileNodeData }) {
+function ProfileNodeComponent({ data }: NodeProps & { data: ProfileNodeData }) {
   return (
     <div className="locus-node">
       <Handle type="target" position={Position.Left} />
