@@ -7,7 +7,6 @@ import { SectionPalette } from '@/components/builder/SectionPalette';
 import { LivePreview } from '@/components/builder/LivePreview';
 import { PropertyPanel } from '@/components/builder/PropertyPanel';
 import { PublishModal } from '@/components/PublishModal';
-import { startAgents } from '@/agents';
 import type { PageConfig, PageSection, SectionType } from '@/agents/state';
 import '@/styles/builder.css';
 
@@ -105,7 +104,6 @@ export default function BuilderPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
-  const [agents] = useState(() => startAgents());
 
   const handlePageChange = useCallback((next: PageConfig) => {
     setPage(next);
@@ -138,23 +136,24 @@ export default function BuilderPage() {
     sharedSites[page.username] = { ...page, published_at: new Date().toISOString() };
     localStorage.setItem(SHARED_SITES_KEY, JSON.stringify(sharedSites));
 
-    if (agents?.builder) {
-      agents.builder.saveSite({
-        id: page.id,
-        username: page.username,
-        title: page.title,
-        theme: page.theme,
-        font: 'inter',
-        layout: 'stack',
-        branding: { primary_color: page.primary_color },
-        blocks: [],
+    try {
+      const res = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(page),
       });
+      const data = await res.json();
+      if (data.url) {
+        setPublishedUrl(data.url);
+      } else {
+        setPublishedUrl(`${window.location.origin}/s/${page.username}`);
+      }
+    } catch {
+      setPublishedUrl(`${window.location.origin}/s/${page.username}`);
     }
 
-    const url = `${window.location.origin}/s/${page.username}`;
-    setPublishedUrl(url);
     setIsPublishOpen(true);
-  }, [page, agents]);
+  }, [page]);
 
   const cycleTheme = useCallback(() => {
     const themes: PageConfig['theme'][] = ['modern', 'dark', 'retro', 'glass', 'neon'];
