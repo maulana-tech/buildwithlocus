@@ -1,403 +1,214 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
-import {
-  type Node,
-  type Edge,
-  type OnNodesChange,
-  type OnEdgesChange,
-  type Connection,
-  applyNodeChanges,
-  applyEdgeChanges,
-  addEdge,
-} from '@xyflow/react';
-import { Layout, Globe, Send, Eye } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Send, Eye, Palette } from 'lucide-react';
 
-import { FlowCanvas } from '@/components/FlowCanvas';
-import { NodePanel, type BlockType } from '@/components/NodePanel';
+import { SectionPalette } from '@/components/builder/SectionPalette';
+import { LivePreview } from '@/components/builder/LivePreview';
+import { PropertyPanel } from '@/components/builder/PropertyPanel';
 import { PublishModal } from '@/components/PublishModal';
 import { startAgents } from '@/agents';
-import { WidgetConfig, SiteConfig } from '@/agents/state';
+import type { PageConfig, PageSection, SectionType } from '@/agents/state';
+import '@/styles/builder.css';
 
-const STORAGE_KEY = 'locus_studio_site_v1';
+const STORAGE_KEY = 'locus_page_builder_v1';
 const SHARED_SITES_KEY = 'locus_shared_sites';
 
-function loadSavedState() {
+function uid() {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function loadPage(): PageConfig | null {
   if (typeof window === 'undefined') return null;
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (!saved) return null;
-  try {
-    return JSON.parse(saved) as { siteConfig: SiteConfig; widgetConfig: WidgetConfig; nodes?: Node[]; edges?: Edge[] };
-  } catch {
-    return null;
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
+
+function savePage(page: PageConfig) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(page));
+}
+
+function createSection(type: SectionType): PageSection {
+  const id = uid();
+  switch (type) {
+    case 'hero':
+      return { id, type, headline: 'Welcome to My Store', subtext: 'The best products at the best prices.', cta_label: 'Shop Now', cta_url: '#', alignment: 'center' };
+    case 'features':
+      return {
+        id, type, title: 'Why Choose Us', columns: 3,
+        items: [
+          { id: uid(), icon: '⚡', title: 'Fast Delivery', description: 'Get your order in 24 hours.' },
+          { id: uid(), icon: '🔒', title: 'Secure Payment', description: 'Protected by PayWithLocus.' },
+          { id: uid(), icon: '💬', title: '24/7 Support', description: 'We are always here to help.' },
+        ],
+      };
+    case 'pricing':
+      return {
+        id, type, title: 'Pricing Plans', columns: 3,
+        plans: [
+          { id: uid(), name: 'Starter', price: 'Free', period: 'mo', features: ['1 product', 'Basic checkout'], cta_label: 'Get Started', highlighted: false },
+          { id: uid(), name: 'Pro', price: '$9', period: 'mo', features: ['10 products', 'Custom branding', 'Analytics'], cta_label: 'Go Pro', highlighted: true },
+          { id: uid(), name: 'Enterprise', price: '$29', period: 'mo', features: ['Unlimited products', 'Priority support', 'API access'], cta_label: 'Contact Us', highlighted: false },
+        ],
+      };
+    case 'checkout':
+      return { id, type, title: 'Complete Your Purchase', description: 'Secure checkout powered by PayWithLocus.', amount: 150000, currency: 'IDR', payment_methods: ['QRIS', 'Bank Transfer', 'E-Wallet'], cta_label: 'Pay Now' };
+    case 'testimonials':
+      return {
+        id, type, title: 'What Customers Say',
+        items: [
+          { id: uid(), name: 'Andi S.', role: 'Small Business Owner', content: 'Super easy to set up. Payments started flowing in minutes.' },
+          { id: uid(), name: 'Maya R.', role: 'Freelancer', content: 'Finally a checkout tool that does not need a developer.' },
+          { id: uid(), name: 'Budi K.', role: 'E-commerce Founder', content: 'The visual builder is a game changer for our team.' },
+        ],
+      };
+    case 'faq':
+      return {
+        id, type, title: 'Frequently Asked Questions',
+        items: [
+          { id: uid(), question: 'How do I receive payments?', answer: 'Payments are processed through PayWithLocus and deposited to your linked bank account.' },
+          { id: uid(), question: 'Is there a setup fee?', answer: 'No. Locus Studio is completely free to use. You only pay transaction fees.' },
+          { id: uid(), question: 'Can I customize the checkout page?', answer: 'Yes! Use the visual builder to match your brand colors, fonts, and layout.' },
+        ],
+      };
+    case 'footer':
+      return {
+        id, type, brand_name: 'My Store', tagline: 'Built with Locus Studio',
+        links: [
+          { id: uid(), label: 'Privacy', url: '#' },
+          { id: uid(), label: 'Terms', url: '#' },
+        ],
+        socials: [
+          { id: uid(), platform: 'twitter', url: '#' },
+        ],
+      };
   }
 }
 
-const DEFAULT_WIDGET: WidgetConfig = {
-  widget_id: 'wgt_demo',
-  merchant_id: 'mer_123',
-  branding: { logo_url: '/logo.png', primary_color: '#6366f1', button_label: 'Pay Now' },
-  payment_methods: ['QRIS', 'bank_transfer'],
-  amount: { type: 'fixed', value: 150000, currency: 'IDR' },
-  redirects: { success_url: 'https://example.com/success', failure_url: 'https://example.com/failure' },
-};
-
-const DEFAULT_SITE: SiteConfig = {
-  id: 'site_123',
-  username: 'demo_store',
-  title: 'My Locus Store',
-  theme: 'glass',
-  font: 'inter',
-  layout: 'stack',
-  branding: { primary_color: '#6366f1' },
-  blocks: [
-    { id: 'p1', type: 'profile', visible: true, name: 'Locus Demo Store', bio: 'Premium checkout for everyone.', avatar_url: '/logo.png' },
-    { id: 'l1', type: 'link', visible: true, title: 'Follow us on X', url: 'https://x.com/paywithlocus' },
+const DEFAULT_PAGE: PageConfig = {
+  id: 'page_1',
+  username: 'my_store',
+  title: 'My Store',
+  theme: 'modern',
+  primary_color: '#6366f1',
+  sections: [
+    createSection('hero'),
+    createSection('features'),
+    createSection('checkout'),
+    createSection('footer'),
   ],
 };
 
-function buildWidgetNodes(config: WidgetConfig): Node[] {
-  return [
-    {
-      id: 'w-profile',
-      type: 'profile',
-      position: { x: 40, y: 120 },
-      data: {
-        name: 'Merchant Store',
-        bio: 'Accept payments via Locus',
-        avatar_url: config.branding.logo_url,
-      },
-    },
-    {
-      id: 'w-payment',
-      type: 'payment',
-      position: { x: 340, y: 120 },
-      data: { methods: config.payment_methods },
-    },
-    {
-      id: 'w-checkout',
-      type: 'checkout',
-      position: { x: 640, y: 120 },
-      data: {
-        amountType: config.amount.type,
-        amountValue: config.amount.value,
-        currency: config.amount.currency,
-      },
-    },
-    {
-      id: 'w-redirect',
-      type: 'redirect',
-      position: { x: 940, y: 120 },
-      data: {
-        successUrl: config.redirects.success_url,
-        failureUrl: config.redirects.failure_url,
-      },
-    },
-  ];
-}
-
-function buildWidgetEdges(): Edge[] {
-  return [
-    { id: 'e-w1', source: 'w-profile', target: 'w-payment', type: 'smoothstep' },
-    { id: 'e-w2', source: 'w-payment', target: 'w-checkout', type: 'smoothstep' },
-    { id: 'e-w3', source: 'w-checkout', target: 'w-redirect', type: 'smoothstep' },
-  ];
-}
-
-function buildSiteNodes(site: SiteConfig): Node[] {
-  const nodes: Node[] = [];
-  let y = 60;
-
-  const profileBlock = site.blocks.find((b) => b.type === 'profile');
-  if (profileBlock) {
-    nodes.push({
-      id: 's-profile',
-      type: 'profile',
-      position: { x: 80, y: 60 },
-      data: {
-        name: (profileBlock as { name: string }).name || 'Name',
-        bio: (profileBlock as { bio: string }).bio || '',
-        avatar_url: (profileBlock as { avatar_url?: string }).avatar_url || '/logo.png',
-      },
-    });
-    y = 260;
-  }
-
-  const links = site.blocks.filter((b) => b.type === 'link');
-  links.forEach((block, i) => {
-    const link = block as { title: string; url: string };
-    nodes.push({
-      id: `s-link-${block.id}`,
-      type: 'link',
-      position: { x: 80, y: y + i * 200 },
-      data: { title: link.title, url: link.url },
-    });
-  });
-
-  const checkouts = site.blocks.filter((b) => b.type === 'checkout');
-  checkouts.forEach((block, i) => {
-    nodes.push({
-      id: `s-checkout-${block.id}`,
-      type: 'checkout',
-      position: { x: 420, y: y + i * 200 },
-      data: { amountType: 'fixed' as const, amountValue: 150000, currency: 'IDR' },
-    });
-  });
-
-  return nodes;
-}
-
-function buildSiteEdges(site: SiteConfig): Edge[] {
-  const edges: Edge[] = [];
-  const profileBlock = site.blocks.find((b) => b.type === 'profile');
-  const links = site.blocks.filter((b) => b.type === 'link');
-
-  if (profileBlock) {
-    links.forEach((block) => {
-      edges.push({
-        id: `e-sp-${block.id}`,
-        source: 's-profile',
-        target: `s-link-${block.id}`,
-        type: 'smoothstep',
-      });
-    });
-  }
-  return edges;
-}
-
-let nodeIdCounter = 0;
-function getNextNodeId() {
-  return `node_${++nodeIdCounter}_${Date.now()}`;
-}
-
-function getSavedState() {
-  return loadSavedState();
-}
-
-export default function StudioPage() {
-  const [activeTab, setActiveTab] = useState<'widget' | 'site'>('widget');
-  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+export default function BuilderPage() {
+  const [page, setPage] = useState<PageConfig>(() => loadPage() ?? DEFAULT_PAGE);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
+  const [agents] = useState(() => startAgents());
 
-  const [widgetConfig] = useState<WidgetConfig>(() => getSavedState()?.widgetConfig ?? DEFAULT_WIDGET);
-  const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => getSavedState()?.siteConfig ?? DEFAULT_SITE);
-  const [agents] = useState<ReturnType<typeof startAgents>>(() => startAgents());
-
-  const initialNodes = useMemo(() => {
-    const savedState = getSavedState();
-    if (savedState?.nodes && savedState.nodes.length > 0) {
-      return savedState.nodes;
-    }
-    return activeTab === 'widget' ? buildWidgetNodes(widgetConfig) : buildSiteNodes(siteConfig);
+  const handlePageChange = useCallback((next: PageConfig) => {
+    setPage(next);
+    savePage(next);
   }, []);
 
-  const initialEdges = useMemo(() => {
-    const savedState = getSavedState();
-    if (savedState?.edges && savedState.edges.length > 0) {
-      return savedState.edges;
-    }
-    return activeTab === 'widget' ? buildWidgetEdges() : buildSiteEdges(siteConfig);
+  const handleAddSection = useCallback((type: SectionType) => {
+    const section = createSection(type);
+    setPage((prev) => {
+      const next = { ...prev, sections: [...prev.sections, section] };
+      savePage(next);
+      return next;
+    });
+    setSelectedId(section.id);
   }, []);
 
-  const [nodes, setNodes] = useState<Node[]>(initialNodes);
-  const [edges, setEdges] = useState<Edge[]>(initialEdges);
-
-  const onNodesChange: OnNodesChange = useCallback(
-    (changes) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    []
-  );
-
-  const onEdgesChange: OnEdgesChange = useCallback(
-    (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    []
-  );
-
-  const onConnect = useCallback(
-    (connection: Edge | Connection) => {
-      if ('id' in connection && 'source' in connection && 'target' in connection) {
-        setEdges((eds) => [...eds, connection as Edge]);
-      } else {
-        setEdges((eds) => addEdge(connection as Connection, eds));
-      }
-    },
-    []
-  );
-
-  const persistState = useCallback(() => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ siteConfig, widgetConfig, nodes, edges })
-    );
-  }, [siteConfig, widgetConfig, nodes, edges]);
-
-  React.useEffect(() => {
-    persistState();
-  }, [persistState]);
-
-  const switchTab = useCallback(
-    (tab: 'widget' | 'site') => {
-      setActiveTab(tab);
-      if (tab === 'widget') {
-        setNodes(buildWidgetNodes(widgetConfig));
-        setEdges(buildWidgetEdges());
-      } else {
-        setNodes(buildSiteNodes(siteConfig));
-        setEdges(buildSiteEdges(siteConfig));
-      }
-    },
-    [widgetConfig, siteConfig]
-  );
-
-  const addNode = useCallback(
-    (type: BlockType) => {
-      const existingNodes = nodes;
-      const lastNode = existingNodes[existingNodes.length - 1];
-      const x = lastNode ? lastNode.position.x + 300 : 40;
-      const y = lastNode ? lastNode.position.y : 120;
-
-      const defaultData: Record<string, Record<string, unknown>> = {
-        profile: { name: 'New Store', bio: '', avatar_url: '/logo.png' },
-        payment: { methods: [] },
-        checkout: { amountType: 'fixed', amountValue: 0, currency: 'IDR' },
-        redirect: { successUrl: '', failureUrl: '' },
-        link: { title: 'New Link', url: 'https://' },
-      };
-
-      const newId = getNextNodeId();
-      const newNode: Node = {
-        id: newId,
-        type,
-        position: { x, y },
-        data: defaultData[type] || {},
-      };
-
-      setNodes((nds) => [...nds, newNode]);
-
-      if (lastNode) {
-        const newEdge: Edge = {
-          id: `e-${lastNode.id}-${newId}`,
-          source: lastNode.id,
-          target: newId,
-          type: 'smoothstep',
-        };
-        setEdges((eds) => [...eds, newEdge]);
-      }
-    },
-    [nodes]
-  );
+  const handleDeleteSection = useCallback((id: string) => {
+    setPage((prev) => {
+      const next = { ...prev, sections: prev.sections.filter((s) => s.id !== id) };
+      savePage(next);
+      return next;
+    });
+    setSelectedId((prev) => (prev === id ? null : prev));
+  }, []);
 
   const handlePublish = useCallback(async () => {
-    const sharedSites: Record<string, SiteConfig & { published_at?: string }> = JSON.parse(
+    const sharedSites: Record<string, PageConfig & { published_at?: string }> = JSON.parse(
       localStorage.getItem(SHARED_SITES_KEY) || '{}'
     );
-    sharedSites[siteConfig.username] = {
-      ...siteConfig,
-      published_at: new Date().toISOString(),
-    };
+    sharedSites[page.username] = { ...page, published_at: new Date().toISOString() };
     localStorage.setItem(SHARED_SITES_KEY, JSON.stringify(sharedSites));
 
-    if (agents?.builder) agents.builder.saveSite(siteConfig);
+    if (agents?.builder) {
+      agents.builder.saveSite({
+        id: page.id,
+        username: page.username,
+        title: page.title,
+        theme: page.theme,
+        font: 'inter',
+        layout: 'stack',
+        branding: { primary_color: page.primary_color },
+        blocks: [],
+      });
+    }
 
-    const url = `${window.location.origin}/s/${siteConfig.username}`;
+    const url = `${window.location.origin}/s/${page.username}`;
     setPublishedUrl(url);
-    setIsPublishModalOpen(true);
-  }, [siteConfig, agents]);
+    setIsPublishOpen(true);
+  }, [page, agents]);
+
+  const cycleTheme = useCallback(() => {
+    const themes: PageConfig['theme'][] = ['modern', 'dark', 'retro', 'glass', 'neon'];
+    const idx = themes.indexOf(page.theme);
+    const next = themes[(idx + 1) % themes.length];
+    handlePageChange({ ...page, theme: next });
+  }, [page, handlePageChange]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#09090b', color: '#ededef' }}>
-      <header
-        style={{
-          height: '48px',
-          borderBottom: '1px solid #1e1e22',
-          background: '#111113',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 16px',
-          gap: '16px',
-          flexShrink: 0,
-        }}
-      >
+      <header style={{
+        height: '48px',
+        borderBottom: '1px solid #1e1e22',
+        background: '#111113',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 16px',
+        gap: '12px',
+        flexShrink: 0,
+      }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <img src="/logo.png" alt="" style={{ width: '20px', height: '20px' }} />
-          <span style={{ fontWeight: 600, fontSize: '13px', color: '#ededef' }}>Locus Studio</span>
+          <span style={{ fontWeight: 600, fontSize: '13px' }}>Locus Studio</span>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            background: '#09090b',
-            borderRadius: '4px',
-            padding: '2px',
-            border: '1px solid #1e1e22',
-          }}
-        >
-          <button
-            onClick={() => switchTab('widget')}
+        <div style={{ width: '1px', height: '20px', background: '#1e1e22' }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '11px', color: '#55555e' }}>locus.sh/s/</span>
+          <input
+            value={page.username}
+            onChange={(e) => handlePageChange({ ...page, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '5px 12px',
-              fontSize: '12px',
-              fontWeight: 500,
-              border: 'none',
+              background: '#09090b',
+              border: '1px solid #1e1e22',
               borderRadius: '3px',
-              cursor: 'pointer',
-              background: activeTab === 'widget' ? '#1a1a1e' : 'transparent',
-              color: activeTab === 'widget' ? '#ededef' : '#55555e',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <Layout size={13} />
-            Widget
-          </button>
-          <button
-            onClick={() => switchTab('site')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '5px 12px',
+              padding: '4px 8px',
+              color: '#ededef',
               fontSize: '12px',
-              fontWeight: 500,
-              border: 'none',
-              borderRadius: '3px',
-              cursor: 'pointer',
-              background: activeTab === 'site' ? '#1a1a1e' : 'transparent',
-              color: activeTab === 'site' ? '#ededef' : '#55555e',
-              transition: 'all 0.15s ease',
+              width: '120px',
+              outline: 'none',
+              fontFamily: 'inherit',
             }}
-          >
-            <Globe size={13} />
-            Site
-          </button>
+          />
         </div>
 
         <div style={{ flex: 1 }} />
 
-        {activeTab === 'site' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '11px', color: '#55555e' }}>locus.sh/s/</span>
-            <input
-              value={siteConfig.username}
-              onChange={(e) => setSiteConfig({ ...siteConfig, username: e.target.value })}
-              style={{
-                background: '#09090b',
-                border: '1px solid #1e1e22',
-                borderRadius: '3px',
-                padding: '4px 8px',
-                color: '#ededef',
-                fontSize: '12px',
-                width: '120px',
-                outline: 'none',
-                fontFamily: 'inherit',
-              }}
-            />
-          </div>
-        )}
+        <button onClick={cycleTheme} className="builder-props-action" title={`Theme: ${page.theme}`}>
+          <Palette size={13} />
+        </button>
 
         <button
-          onClick={() => window.open(`/s/${siteConfig.username}`, '_blank')}
+          onClick={() => window.open(`/s/${page.username}`, '_blank')}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -440,20 +251,15 @@ export default function StudioPage() {
       </header>
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <NodePanel mode={activeTab} onAddNode={addNode} />
-        <FlowCanvas
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-        />
+        <SectionPalette onAdd={handleAddSection} />
+        <LivePreview page={page} selectedId={selectedId} onSelect={setSelectedId} />
+        <PropertyPanel page={page} selectedId={selectedId} onChange={handlePageChange} onDelete={handleDeleteSection} />
       </div>
 
       <PublishModal
-        isOpen={isPublishModalOpen}
-        onClose={() => setIsPublishModalOpen(false)}
-        siteUrl={publishedUrl || `/s/${siteConfig.username}`}
+        isOpen={isPublishOpen}
+        onClose={() => setIsPublishOpen(false)}
+        siteUrl={publishedUrl || `/s/${page.username}`}
       />
     </div>
   );
