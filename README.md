@@ -1,18 +1,25 @@
 # Locus Checkout Studio
 
-A no-code visual checkout widget builder for merchants, powered by **BuildWithLocus** and **PayWithLocus** APIs. Built for the Locus Paygentic Hackathon #2.
+A no-code **section-based website builder** for merchants, powered by **BuildWithLocus** and **PayWithLocus** APIs. Built for the Locus Paygentic Hackathon #2.
 
 ## What It Does
 
-Merchants build checkout widgets and link-in-bio sites using a **visual node-based editor** — drag, connect, and configure payment flows without writing code. Sites publish instantly and accept real payments via Locus.
+Merchants build professional landing pages and checkout sites using a **visual section editor** — add Hero, Features, Pricing, Checkout sections and publish instantly. Sites accept real payments via PayWithLocus and are deployed to BuildWithLocus.
+
+## Live Demo
+
+**Production URL:** https://svc-mo8f7ext1aijm8nv.buildwithlocus.com
+
+- **Studio:** `/dashboard` — Section-based page builder
+- **Preview:** `/s/[username]` — Published public sites
 
 ## Stack
 
 - **Next.js 16** (App Router) + React 19 + TypeScript (strict)
-- **@xyflow/react** — Node-based visual flow editor
 - **lucide-react** — Icons
 - **CSS Variables** — Dark theme, no Tailwind
-- **Geist + Geist Mono** — Fonts via `next/font`
+- **Geist + Geist Mono + Space Grotesk** — Fonts via `next/font`
+- **Docker** — Containerized for BuildWithLocus
 
 ## Getting Started
 
@@ -38,46 +45,88 @@ Open http://localhost:3000
 ```
 src/
 ├── app/
-│   ├── page.tsx              Main studio (visual node editor)
-│   ├── s/[id]/page.tsx       Public site preview route
-│   └── api/                  API routes (publish, sites, webhooks)
-├── components/
-│   ├── nodes/                Custom ReactFlow node components
-│   ├── FlowCanvas.tsx        ReactFlow canvas wrapper
-│   ├── NodePanel.tsx         Block palette sidebar
-│   └── PublishModal.tsx      Deployment simulation modal
-├── agents/                   Event-driven agent system
-│   ├── state.ts              Types, EventBus, GlobalState
+│   ├── page.tsx              Landing page
+│   ├── dashboard/page.tsx    Section-based builder Studio
+│   ├── s/[id]/page.tsx       Public site renderer
+│   └── api/
+│       ├── publish/route.ts  Deploy to BuildWithLocus + create payment links
+│       ├── sites/route.ts     Server-side JSON file storage
+│       └── webhooks/locus/     Webhook handler for transactions
+├── components/builder/
+│   ├── SectionPalette.tsx    Left sidebar — add sections
+│   ├── LivePreview.tsx       Center — live preview
+│   └── PropertyPanel.tsx     Right sidebar — edit section props
+├── agents/
+│   ├── state.ts              Types (PageConfig, SectionTypes)
 │   ├── builder.ts            Config validation
-│   ├── payment.ts            PayWithLocus API integration
-│   ├── analytics.ts          In-memory analytics store
-│   └── orchestrator.ts       Event routing
-├── lib/
-│   └── locus.ts              Typed API client (PayWithLocus + BuildWithLocus)
-└── styles/
-    ├── flow.css              ReactFlow dark theme overrides
-    └── themes.css            Site theme variables
+│   └── payment.ts            PayWithLocus API integration
+└── lib/
+    └── locus.ts              Typed API client
 ```
 
-## Node-Based Editor
+## Section-Based Builder
 
-The studio uses a visual flow canvas where each component is a draggable node:
+The Studio has 3 panels:
 
-**Widget Builder:** `Profile → Payment Methods → Checkout → Redirects`
-**Site Builder:** `Profile → Links / Checkout Widgets`
+1. **Section Palette (Left)** — Click to add: Hero, Features, Pricing, Checkout, Testimonials, FAQ, Footer
+2. **Live Preview (Center)** — Real-time preview as you edit
+3. **Property Panel (Right)** — Edit selected section properties
 
-Click blocks in the sidebar to add nodes. Connect them by dragging between handles.
+### Available Sections
 
-## Agent System
+| Section | Description |
+|---|---|
+| Hero | Headline + subtext + CTA button |
+| Features | Grid of feature cards with icons |
+| Pricing | Pricing table with plans |
+| Checkout | Embedded PayWithLocus payment widget |
+| Testimonials | Customer reviews grid |
+| FAQ | Accordion-style Q&A |
+| Footer | Links + socials + brand |
 
-4 in-process agents communicate via an event bus:
+### Themes
 
-- **BuilderAgent** — Validates widget/site config
-- **PaymentAgent** — Creates payment links via PayWithLocus API
-- **AnalyticsAgent** — Tracks transactions, revenue, method breakdown
-- **OrchestratorAgent** — Routes events between agents
+5 built-in themes: `modern`, `dark`, `retro`, `glass`, `neon`
 
-PaymentAgent calls the real Locus API when `LOCUS_API_KEY` is set, falls back to mock URLs otherwise.
+## Payment Integration
+
+Checkout sections create real payment links via PayWithLocus API:
+
+- QRIS, Bank Transfer, E-Wallet support
+- Configurable amount + currency
+- Webhook notifications for transaction status
+
+## Deployment Flow
+
+```
+Dashboard → Compose sections → Publish
+  → POST /api/publish
+    → Save to server storage (JSON file)
+    → Create payment links (PayWithLocus)
+    → Deploy to BuildWithLocus (via /v1/projects/from-repo)
+  → Return live URL
+```
+
+The app containerizes with **Dockerfile** for BuildWithLocus and auto-deploys from GitHub.
+
+## Environment Variables
+
+| Variable | Description | Required |
+|---|---|---|
+| `LOCUS_API_KEY` | PayWithLocus API key | Yes |
+| `LOCUS_WEBHOOK_SECRET` | Webhook HMAC secret | No |
+| `LOCUS_BASE_URL` | Locus API URL (default: `https://api.locus.sh`) | No |
+| `NEXT_PUBLIC_APP_URL` | Production URL | Yes (production) |
+| `NEXT_PUBLIC_DEPLOY_REPO` | GitHub repo for deployment | Yes (production) |
+
+## BuildWithLocus Integration
+
+The app uses BuildWithLocus for hosting:
+
+1. **Project creation:** `POST /v1/projects/from-repo` 
+2. **Auth:** `POST /v1/auth/exchange` with API key
+3. **Redeploy:** Service auto-redeploys on each publish
+4. **Container:** Next.js app in Docker (port 3000)
 
 ## Environment
 
@@ -90,7 +139,21 @@ PaymentAgent calls the real Locus API when `LOCUS_API_KEY` is set, falls back to
 
 ## Deployment
 
-Configured for BuildWithLocus via `.locusbuild` (single `web` service, port 8080).
+The app is configured for BuildWithLocus via:
+
+- **`.locusbuild`** — Service config (port 3000)
+- **Dockerfile** — Multi-stage Next.js build
+- **deploy flow:** GitHub push → BuildWithLocus auto-deploy
+
+### Manual Deploy
+
+```bash
+# Deploy via API
+curl -X POST https://api.buildwithlocus.com/v1/projects/from-repo \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"your-project","repo":"your-org/repo","branch":"main"}'
+```
 
 ## Hackathon
 
@@ -99,3 +162,7 @@ Configured for BuildWithLocus via `.locusbuild` (single `web` service, port 8080
 | Event | Locus Paygentic Hackathon #2 |
 | Track | BuildWithLocus |
 | Week | 2 of 4 |
+
+## License
+
+MIT
