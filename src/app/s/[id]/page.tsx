@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,14 +13,25 @@ import {
 import type { PageConfig, PageSection } from '@/agents/state';
 
 const SHARED_SITES_KEY = 'locus_shared_sites';
+const APP_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
-function loadPage(id: string): PageConfig | null {
-  if (typeof window === 'undefined') return null;
+function loadFromStorage(username: string): Record<string, unknown> {
+  if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(SHARED_SITES_KEY);
-    if (!raw) return null;
-    const sites = JSON.parse(raw) as Record<string, PageConfig>;
-    return sites[id] || null;
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+async function fetchFromServer(username: string): Promise<PageConfig | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const res = await fetch(`${APP_URL}/api/sites?username=${username}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data as PageConfig;
   } catch {
     return null;
   }
@@ -105,7 +116,7 @@ function PricingSection({ section, theme }: { section: Extract<PageSection, { ty
               <div style={{ fontSize: '36px', fontWeight: 800, marginBottom: '4px' }}>{plan.price}<span style={{ fontSize: '14px', fontWeight: 400, opacity: 0.5 }}>/{plan.period}</span></div>
               <div style={{ margin: '20px 0', textAlign: 'left' }}>
                 {plan.features.map((f, i) => (
-                  <div key={i} style={{ fontSize: '14px', padding: '6px 0', opacity: 0.7, borderBottom: `1px solid ${s.cardBorder}` }}>&#10003; {f}</div>
+                  <div key={i} style={{ fontSize: '14px', padding: '6px 0', opacity: 0.7, borderBottom: `1px solid ${s.cardBorder}` }}>{'\u2713'} {f}</div>
                 ))}
               </div>
               <button style={{
@@ -242,7 +253,36 @@ function FooterSection({ section, theme }: { section: Extract<PageSection, { typ
 export default function PublicSitePage() {
   const params = useParams();
   const id = params.id as string;
-  const [page] = useState<PageConfig | null>(() => loadPage(id));
+  const [page, setPage] = useState<PageConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const remote = await fetchFromServer(id);
+      if (remote) {
+        setPage(remote);
+        setLoading(false);
+        return;
+      }
+      const local = loadFromStorage(id);
+      if (local && local[id]) {
+        setPage(local[id] as PageConfig);
+      }
+      setLoading(false);
+    }
+    load();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0c', color: '#f8f9fa' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '24px', height: '24px', border: '2px solid #333', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ opacity: 0.6, fontSize: '14px' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!page) {
     return (
