@@ -1,24 +1,10 @@
-FROM node:20-alpine AS base
-RUN npm install -g pnpm
-
-FROM base AS deps
+FROM node:20-alpine
 WORKDIR /app
+RUN npm install -g pnpm@9
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+RUN pnpm install --frozen-lockfile --prod
 COPY . .
 RUN pnpm build
-
-FROM base AS runner
-WORKDIR /app
 ENV NODE_ENV=production
-
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
 EXPOSE 3000
 CMD ["pnpm", "start"]
