@@ -22,6 +22,34 @@ async function getBuildToken(): Promise<string | null> {
   }
 }
 
+async function saveToStorage(username: string, page: PageConfig) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/sites`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, page }),
+    });
+    return res.ok;
+  } catch {
+    const sharedSites: Record<string, unknown> = {};
+    sharedSites[username] = { ...page, published_at: new Date().toISOString() };
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('locus_shared_sites', JSON.stringify(sharedSites));
+    }
+    return true;
+  }
+}
+
+async function loadFromStorage(username: string): Promise<PageConfig | null> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/sites?username=${username}`);
+    if (!res.ok) return null;
+    return res.json() as Promise<PageConfig | null>;
+  } catch {
+    return null;
+  }
+}
+
 function extractCheckoutSections(sections: PageSection[]) {
   return sections.filter((s): s is Extract<PageSection, { type: 'checkout' }> => s.type === 'checkout');
 }
@@ -103,6 +131,8 @@ export async function POST(req: NextRequest) {
     const checkoutSections = extractCheckoutSections(page.sections);
     const paymentLinks = await createPaymentLinks(checkoutSections);
 
+    const saved = await saveToStorage(page.username, page);
+
     let deployUrl: string | null = null;
     let deployedVia = 'local';
 
@@ -118,12 +148,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const localUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/s/${page.username}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const localUrl = `${appUrl}/s/${page.username}`;
 
     return NextResponse.json({
       success: true,
       url: deployUrl || localUrl,
       deployedVia,
+      storage: saved ? 'server' : 'local',
       paymentLinks,
       fallback: !deployUrl,
       page: {
