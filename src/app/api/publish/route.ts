@@ -14,10 +14,14 @@ async function getBuildToken(): Promise<string | null> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiKey }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error('[Build] Auth exchange failed:', res.status, await res.text());
+      return null;
+    }
     const data = await res.json();
     return data.token || data.access_token || null;
-  } catch {
+  } catch (err) {
+    console.error('[Build] Auth exchange error:', err);
     return null;
   }
 }
@@ -31,22 +35,7 @@ async function saveToStorage(username: string, page: PageConfig) {
     });
     return res.ok;
   } catch {
-    const sharedSites: Record<string, unknown> = {};
-    sharedSites[username] = { ...page, published_at: new Date().toISOString() };
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('locus_shared_sites', JSON.stringify(sharedSites));
-    }
     return true;
-  }
-}
-
-async function loadFromStorage(username: string): Promise<PageConfig | null> {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/sites?username=${username}`);
-    if (!res.ok) return null;
-    return res.json() as Promise<PageConfig | null>;
-  } catch {
-    return null;
   }
 }
 
@@ -77,8 +66,14 @@ async function createPaymentLinks(sections: Extract<PageSection, { type: 'checko
   return links;
 }
 
-async function deployToBuildWithLocus(page: PageConfig, token: string) {
-  const projectRes = await fetch(`${BUILD_BASE_URL}/v1/projects`, {
+async function deployToBuildWithLocus(page: PageConfig, token: string, repo: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.locus.sh';
+
+  console.log('[Build] Deploying to BuildWithLocus...');
+  console.log('[Build] Repo:', repo);
+  console.log('[Build] Token:', token ? 'present' : 'missing');
+
+  const res = await fetch(`${BUILD_BASE_URL}/v1/projects/from-repo`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -86,46 +81,38 @@ async function deployToBuildWithLocus(page: PageConfig, token: string) {
     },
     body: JSON.stringify({
       name: page.username,
-      source: 'locus-studio',
-      config: {
-        type: 'static',
-        pages: page.sections,
-        theme: page.theme,
-        primary_color: page.primary_color,
-      },
+      repo: repo,
+      branch: 'main',
     }),
   });
 
-  if (!projectRes.ok) {
-    const err = await projectRes.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message || `Build API error: ${projectRes.status}`);
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('[Build] Deploy failed:', res.status, errText);
+    throw new Error(`Deploy failed: ${res.status} ${errText}`);
   }
 
-  const project = await projectRes.json();
+  const data = await res.json();
+  console.log('[Build] Deploy response:', JSON.stringify(data).slice(0, 500));
 
-  const deployRes = await fetch(`${BUILD_BASE_URL}/v1/projects/${(project as { id: string }).id}/deploy`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!deployRes.ok) {
-    const err = await deployRes.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message || `Deploy error: ${deployRes.status}`);
-  }
-
-  return deployRes.json() as Promise<{ url?: string; id?: string }>;
+  return {
+    url: data.project?.url || data.services?.[0]?.url || data.url || `${appUrl}/s/${page.username}`,
+    projectId: data.project?.id,
+  };
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const page = body as PageConfig;
+    const repo = body.repo as string;
 
     if (!page.username) {
       return NextResponse.json({ error: 'username is required' }, { status: 400 });
+    }
+
+    if (!repo) {
+      return NextResponse.json({ error: 'repo (GitHub repo) is required for deployment' }, { status: 400 });
     }
 
     const checkoutSections = extractCheckoutSections(page.sections);
@@ -135,16 +122,18 @@ export async function POST(req: NextRequest) {
 
     let deployUrl: string | null = null;
     let deployedVia = 'local';
+    let projectId: string | null = null;
 
     const token = await getBuildToken();
     if (token) {
       try {
-        const deployResult = await deployToBuildWithLocus(page, token);
-        deployUrl = deployResult.url || null;
+        const result = await deployToBuildWithLocus(page, token, repo);
+        deployUrl = result.url;
+        projectId = result.projectId;
         deployedVia = 'buildwithlocus';
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn('[Publish] BuildWithLocus deploy failed, using local:', msg);
+        console.warn('[Publish] BuildWithLocus deploy failed:', msg);
       }
     }
 
@@ -155,6 +144,7 @@ export async function POST(req: NextRequest) {
       success: true,
       url: deployUrl || localUrl,
       deployedVia,
+      projectId,
       storage: saved ? 'server' : 'local',
       paymentLinks,
       fallback: !deployUrl,
@@ -168,6 +158,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
+    console.error('[Publish] Error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
