@@ -12,6 +12,7 @@ import '@/styles/builder.css';
 
 const STORAGE_KEY = 'locus_page_builder_v1';
 const SHARED_SITES_KEY = 'locus_shared_sites';
+const DEFAULT_REPO = 'maulana-tech/buildwithlocus';
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -140,15 +141,20 @@ export default function BuilderPage() {
       const res = await fetch('/api/publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(page),
+        body: JSON.stringify({
+          ...page,
+          repo: DEFAULT_REPO,
+        }),
       });
       const data = await res.json();
+      console.log('[Publish] Response:', data);
       if (data.url) {
         setPublishedUrl(data.url);
       } else {
         setPublishedUrl(`${window.location.origin}/s/${page.username}`);
       }
-    } catch {
+    } catch (err) {
+      console.error('[Publish] Error:', err);
       setPublishedUrl(`${window.location.origin}/s/${page.username}`);
     }
 
