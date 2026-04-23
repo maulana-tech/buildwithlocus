@@ -86,13 +86,21 @@ export default function SitePage(props: { params: Promise<{ id: string }> }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('https://svc-moba0odjul0rjfgy.buildwithlocus.com/api/sites?username=' + id)
-      .then(r => r.json())
+    const url = 'https://svc-moba0odjul0rjfgy.buildwithlocus.com/api/sites?username=' + id;
+    console.log('Fetching:', url);
+    fetch(url)
+      .then(r => {
+        console.log('Response:', r.status, r.ok);
+        return r.json();
+      })
       .then(data => {
+        console.log('Data:', JSON.stringify(data).slice(0, 100));
         if (data.sections?.length) setPage(data);
+        else setError('No sections found');
         setLoading(false);
       })
       .catch(e => {
+        console.error('Error:', e);
         setError(String(e));
         setLoading(false);
       });
