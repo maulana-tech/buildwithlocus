@@ -11,6 +11,7 @@ Merchants build professional landing pages and checkout sites using a **visual s
 **Production URL:** https://svc-mo8f7ext1aijm8nv.buildwithlocus.com
 
 - **Studio:** `/dashboard` — Section-based page builder
+- **Analytics:** `/analytics` — Revenue + transaction tracking
 - **Preview:** `/s/[username]` — Published public sites
 
 ## Stack
@@ -47,17 +48,19 @@ src/
 ├── app/
 │   ├── page.tsx              Landing page
 │   ├── dashboard/page.tsx    Section-based builder Studio
+│   ├── analytics/page.tsx    Analytics dashboard
 │   ├── s/[id]/page.tsx       Public site renderer
 │   └── api/
 │       ├── publish/route.ts  Deploy to BuildWithLocus + create payment links
 │       ├── sites/route.ts     Server-side JSON file storage
-│       └── webhooks/locus/     Webhook handler for transactions
+│       ├── analytics/route.ts Analytics data API
+│       └── webhooks/locus/    Webhook handler for transactions
 ├── components/builder/
 │   ├── SectionPalette.tsx    Left sidebar — add sections
-│   ├── LivePreview.tsx       Center — live preview
+│   ├── LivePreview.tsx       Center — live preview (mobile/desktop + zoom)
 │   └── PropertyPanel.tsx     Right sidebar — edit section props
 ├── agents/
-│   ├── state.ts              Types (PageConfig, SectionTypes)
+│   ├── state.ts              Types (PageConfig, SectionTypes, SiteAnalytics)
 │   ├── builder.ts            Config validation
 │   └── payment.ts            PayWithLocus API integration
 └── lib/
@@ -69,8 +72,18 @@ src/
 The Studio has 3 panels:
 
 1. **Section Palette (Left)** — Click to add: Hero, Features, Pricing, Checkout, Testimonials, FAQ, Footer
-2. **Live Preview (Center)** — Real-time preview as you edit
+2. **Live Preview (Center)** — Real-time preview with **device toggle** (mobile/desktop) + **zoom controls** (50%-150%)
 3. **Property Panel (Right)** — Edit selected section properties
+
+### AI Builder
+
+Type a description in the header input to auto-generate sections:
+
+```
+"landing page for my coffee shop with pricing and contact info"
+```
+
+Parses keywords: hero, features, pricing, checkout, testimonials, faq, footer
 
 ### Available Sections
 
@@ -87,6 +100,15 @@ The Studio has 3 panels:
 ### Themes
 
 5 built-in themes: `modern`, `dark`, `retro`, `glass`, `neon`
+
+## Analytics Dashboard
+
+Track site performance at `/analytics`:
+
+- Total revenue (USDC)
+- Transaction count
+- Page views
+- Per-site breakdown
 
 ## Payment Integration
 
@@ -127,15 +149,6 @@ The app uses BuildWithLocus for hosting:
 2. **Auth:** `POST /v1/auth/exchange` with API key
 3. **Redeploy:** Service auto-redeploys on each publish
 4. **Container:** Next.js app in Docker (port 3000)
-
-## Environment
-
-| Variable | Description |
-|---|---|
-| `LOCUS_API_KEY` | PayWithLocus API key |
-| `LOCUS_WEBHOOK_SECRET` | Webhook signature secret |
-| `LOCUS_BASE_URL` | Locus API base URL (default: `https://api.locus.sh`) |
-| `NEXT_PUBLIC_APP_URL` | App public URL for webhook registration |
 
 ## Deployment
 
