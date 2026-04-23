@@ -55,48 +55,44 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#09090b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', background: '#0f0f10', color: '#fdfdfd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '32px', height: '32px', border: '3px solid #222', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ opacity: 0.5 }}>Loading analytics...</p>
+          <div style={{ width: '28px', height: '28px', border: '2px solid #2a2a2b', borderTopColor: '#b7d941', borderRadius: 0, animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
+          <p style={{ color: '#666668', fontSize: '13px' }}>Loading analytics...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090b', color: '#fff', display: 'flex', flexDirection: 'column' }}>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-      
+    <div style={{ minHeight: '100vh', background: '#0f0f10', color: '#fdfdfd', display: 'flex', flexDirection: 'column' }}>
       <AppNavbar />
 
-      <main style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Analytics</h1>
-        <p style={{ color: '#71717a', fontSize: '14px', marginBottom: '32px' }}>Track your site performance and revenue</p>
+      <main style={{ padding: '32px', maxWidth: '960px', margin: '0 auto', width: '100%' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 500, letterSpacing: '-0.005em', marginBottom: '4px' }}>Analytics</h1>
+        <p style={{ color: '#a0a0a2', fontSize: '13px', marginBottom: '32px', lineHeight: 1.55 }}>Track performance and revenue</p>
 
         {summary && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '40px' }}>
-            <StatCard icon={<DollarSign size={18} />} label="Total Revenue" value={`${summary.totalRevenue} ${summary.currency}`} color="#22c55e" />
-            <StatCard icon={<ShoppingCart size={18} />} label="Transactions" value={String(summary.totalTransactions)} color="#f59e0b" />
-            <StatCard icon={<Eye size={18} />} label="Total Views" value={formatNumber(summary.totalViews)} color="#6366f1" />
-            <StatCard icon={<Users size={18} />} label="Sites" value={String(sites.length)} color="#ec4899" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', marginBottom: '40px', background: '#2a2a2b', border: '1px solid #2a2a2b' }}>
+            <StatCard icon={<DollarSign size={16} />} label="Revenue" value={`${summary.totalRevenue} ${summary.currency}`} accent />
+            <StatCard icon={<ShoppingCart size={16} />} label="Transactions" value={String(summary.totalTransactions)} />
+            <StatCard icon={<Eye size={16} />} label="Views" value={formatNumber(summary.totalViews)} />
+            <StatCard icon={<Users size={16} />} label="Sites" value={String(sites.length)} />
           </div>
         )}
 
-        <h2 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Your Sites</h2>
-        
+        <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#666668', marginBottom: '16px' }}>Your Sites</div>
+
         {sites.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px', background: '#111113', borderRadius: '8px', border: '1px solid #1e1e22' }}>
-            <BarChart3 size={40} style={{ opacity: 0.3, marginBottom: '16px' }} />
-            <p style={{ color: '#71717a', marginBottom: '16px' }}>No published sites yet</p>
-            <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#6366f1', color: '#fff', padding: '10px 20px', borderRadius: '6px', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>
-              Go to Studio <ArrowRight size={14} />
+          <div style={{ padding: '64px', background: '#1b1b1c', border: '1px solid #2a2a2b', textAlign: 'center' }}>
+            <BarChart3 size={32} style={{ color: '#2a2a2b', marginBottom: '16px' }} />
+            <p style={{ color: '#666668', marginBottom: '16px', fontSize: '13px' }}>No published sites yet</p>
+            <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#b7d941', color: '#0f0f10', padding: '10px 20px', textDecoration: 'none', fontSize: '11px', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Go to Builder <ArrowRight size={12} />
             </Link>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', background: '#2a2a2b', border: '1px solid #2a2a2b' }}>
             {sites.map(site => (
               <SiteRow key={site.username} site={site} />
             ))}
@@ -107,53 +103,53 @@ export default function AnalyticsPage() {
   );
 }
 
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
+function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string; accent?: boolean }) {
   return (
-    <div style={{ background: '#111113', border: '1px solid #1e1e22', borderRadius: '8px', padding: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-        <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
+    <div style={{ background: '#1b1b1c', padding: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <div style={{ width: '28px', height: '28px', background: accent ? 'rgba(183, 217, 65, 0.1)' : '#242425', display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent ? '#b7d941' : '#a0a0a2' }}>
           {icon}
         </div>
-        <span style={{ fontSize: '12px', color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+        <span style={{ fontSize: '10px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>{label}</span>
       </div>
-      <div style={{ fontSize: '28px', fontWeight: 700 }}>{value}</div>
+      <div style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'monospace', color: accent ? '#b7d941' : '#fdfdfd' }}>{value}</div>
     </div>
   );
 }
 
 function SiteRow({ site }: { site: SiteAnalytics }) {
   const paidTx = site.transactions.filter(t => t.status === 'PAID');
-  
+
   return (
-    <div style={{ background: '#111113', border: '1px solid #1e1e22', borderRadius: '8px', padding: '20px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+    <div style={{ background: '#1b1b1c', padding: '20px', display: 'flex', alignItems: 'center', gap: '24px' }}>
       <div style={{ flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <span style={{ fontWeight: 600, fontSize: '15px' }}>{site.title}</span>
-          <span style={{ fontSize: '11px', color: '#555', background: '#1a1a1e', padding: '2px 6px', borderRadius: '3px' }}>{site.username}</span>
+          <span style={{ fontWeight: 600, fontSize: '13px', color: '#fdfdfd' }}>{site.title}</span>
+          <span style={{ fontSize: '10px', color: '#666668', background: '#242425', padding: '2px 6px', fontFamily: 'monospace' }}>{site.username}</span>
         </div>
-        <div style={{ fontSize: '12px', color: '#555' }}>Published {formatDate(site.published_at)}</div>
+        <div style={{ fontSize: '11px', color: '#666668' }}>Published {formatDate(site.published_at)}</div>
       </div>
-      
+
       <div style={{ display: 'flex', gap: '32px', textAlign: 'center' }}>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#22c55e' }}>{site.revenue}</div>
-          <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase' }}>Revenue</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'monospace', color: '#b7d941' }}>{site.revenue}</div>
+          <div style={{ fontSize: '9px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue</div>
         </div>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700 }}>{paidTx.length}</div>
-          <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase' }}>Sales</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'monospace', color: '#fdfdfd' }}>{paidTx.length}</div>
+          <div style={{ fontSize: '9px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sales</div>
         </div>
         <div>
-          <div style={{ fontSize: '20px', fontWeight: 700 }}>{site.views}</div>
-          <div style={{ fontSize: '10px', color: '#555', textTransform: 'uppercase' }}>Views</div>
+          <div style={{ fontSize: '18px', fontWeight: 700, fontFamily: 'monospace', color: '#fdfdfd' }}>{site.views}</div>
+          <div style={{ fontSize: '9px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Views</div>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
-        <a href={`/s/${site.username}`} target="_blank" rel="noopener" style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #2e2e35', borderRadius: '6px', color: '#8b8b94', fontSize: '12px', textDecoration: 'none' }}>
-          View Site
+        <a href={`/s/${site.username}`} target="_blank" rel="noopener" style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', textDecoration: 'none', fontWeight: 500 }}>
+          View
         </a>
-        <Link href={`/analytics/${site.username}`} style={{ padding: '8px 12px', background: '#6366f1', border: 'none', borderRadius: '6px', color: '#fff', fontSize: '12px', textDecoration: 'none', fontWeight: 600 }}>
+        <Link href={`/analytics/${site.username}`} style={{ padding: '8px 12px', background: '#b7d941', border: 'none', color: '#0f0f10', fontSize: '11px', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.03em' }}>
           Details
         </Link>
       </div>
