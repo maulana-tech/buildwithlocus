@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Send, Eye, Palette } from 'lucide-react';
+import { Send, Eye, Palette, Sparkles, Loader2 } from 'lucide-react';
 
 import { SectionPalette } from '@/components/builder/SectionPalette';
 import { LivePreview } from '@/components/builder/LivePreview';
@@ -86,6 +86,39 @@ function createSection(type: SectionType): PageSection {
   }
 }
 
+function generateSectionsFromPrompt(prompt: string): SectionType[] {
+  const p = prompt.toLowerCase();
+  const sections: SectionType[] = [];
+  
+  if (p.includes('hero') || p.includes('landing') || p.includes('welcome') || p.includes('header')) {
+    sections.push('hero');
+  }
+  if (p.includes('feature') || p.includes('benefit') || p.includes('why') || p.includes('service')) {
+    sections.push('features');
+  }
+  if (p.includes('price') || p.includes('pricing') || p.includes('plan') || p.includes(' package') || p.includes('tier')) {
+    sections.push('pricing');
+  }
+  if (p.includes('checkout') || p.includes('pay') || p.includes('buy') || p.includes('purchase') || p.includes('payment')) {
+    sections.push('checkout');
+  }
+  if (p.includes('testimonial') || p.includes('review') || p.includes('feedback') || p.includes('customer')) {
+    sections.push('testimonials');
+  }
+  if (p.includes('faq') || p.includes('question') || p.includes('help') || p.includes('support')) {
+    sections.push('faq');
+  }
+  if (p.includes('footer') || p.includes('contact') || p.includes('about')) {
+    sections.push('footer');
+  }
+  
+  if (sections.length === 0) {
+    sections.push('hero', 'features', 'checkout', 'footer');
+  }
+  
+  return sections;
+}
+
 const DEFAULT_PAGE: PageConfig = {
   id: 'page_1',
   username: 'my_store',
@@ -105,11 +138,30 @@ export default function BuilderPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const handlePageChange = useCallback((next: PageConfig) => {
     setPage(next);
     savePage(next);
   }, []);
+
+  const handleAiGenerate = useCallback(async () => {
+    if (!aiPrompt.trim()) return;
+    setIsAiLoading(true);
+    
+    await new Promise(r => setTimeout(r, 800));
+    
+    const types = generateSectionsFromPrompt(aiPrompt);
+    const newSections = types.map(createSection);
+    
+    setPage(prev => ({ ...prev, sections: newSections }));
+    setSelectedId(newSections[0]?.id || null);
+    savePage({ ...page, sections: newSections });
+    
+    setAiPrompt('');
+    setIsAiLoading(false);
+  }, [aiPrompt, page]);
 
   const handleAddSection = useCallback((type: SectionType) => {
     const section = createSection(type);
@@ -186,6 +238,48 @@ export default function BuilderPage() {
         </div>
 
         <div style={{ width: '1px', height: '20px', background: '#1e1e22' }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            value={aiPrompt}
+            onChange={(e) => setAiPrompt(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
+            placeholder="Describe your page..."
+            style={{
+              background: '#09090b',
+              border: '1px solid #1e1e22',
+              borderRadius: '3px',
+              padding: '4px 10px',
+              color: '#ededef',
+              fontSize: '12px',
+              width: '200px',
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          />
+          <button
+            onClick={handleAiGenerate}
+            disabled={isAiLoading || !aiPrompt.trim()}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 600,
+              background: '#6366f1',
+              border: 'none',
+              borderRadius: '3px',
+              color: '#fff',
+              cursor: isAiLoading ? 'wait' : 'pointer',
+              opacity: isAiLoading ? 0.6 : 1,
+              fontFamily: 'inherit',
+            }}
+          >
+            {isAiLoading ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />}
+            AI
+          </button>
+        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ fontSize: '11px', color: '#55555e' }}>locus.sh/s/</span>
