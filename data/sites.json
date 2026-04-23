@@ -1,1 +1,107 @@
-{"my_store":{"title":"My Store","username":"my_store","theme":"modern","sections":[{"id":"h1","type":"hero","headline":"Welcome to My Store","subtext":"The best products","cta_label":"Shop Now","alignment":"center"}]}}
+{
+  "my_store": {
+    "id": "page_1",
+    "username": "my_store",
+    "title": "My Store",
+    "theme": "modern",
+    "primary_color": "#b7d941",
+    "sections": [
+      {
+        "id": "ah6edv59",
+        "type": "hero",
+        "headline": "Welcome to My Store",
+        "subtext": "The best products at the best prices.",
+        "cta_label": "Shop Now",
+        "cta_url": "#",
+        "alignment": "center"
+      },
+      {
+        "id": "ir5q8pxn",
+        "type": "features",
+        "title": "Why Choose Us",
+        "columns": 3,
+        "items": [
+          {
+            "id": "rezs0tx6",
+            "icon": "⚡",
+            "title": "Fast Delivery",
+            "description": "Get your order in 24 hours."
+          },
+          {
+            "id": "2wrihdis",
+            "icon": "🔒",
+            "title": "Secure Payment",
+            "description": "Protected by PayWithLocus."
+          },
+          {
+            "id": "o07di92a",
+            "icon": "💬",
+            "title": "24/7 Support",
+            "description": "We are always here to help."
+          }
+        ]
+      },
+      {
+        "id": "7x8bt2fk",
+        "type": "checkout",
+        "title": "Complete Your Purchase",
+        "description": "Secure checkout powered by PayWithLocus.",
+        "amount": 150000,
+        "currency": "IDR",
+        "payment_methods": [
+          "QRIS",
+          "Bank Transfer",
+          "E-Wallet"
+        ],
+        "cta_label": "Pay Now"
+      },
+      {
+        "id": "txptf21p",
+        "type": "footer",
+        "brand_name": "My Store",
+        "tagline": "Built with Locus Studio",
+        "links": [
+          {
+            "id": "j2lh0n88",
+            "label": "Privacy",
+            "url": "#"
+          },
+          {
+            "id": "kesamunq",
+            "label": "Terms",
+            "url": "#"
+          }
+        ],
+        "socials": []
+      },
+      {
+        "id": "r37adpwb",
+        "type": "features",
+        "title": "Lets Buy Now",
+        "columns": 3,
+        "items": [
+          {
+            "id": "s0l76n5f",
+            "icon": "⚡",
+            "title": "Fast Delivery",
+            "description": "Get your order in 24 hours."
+          },
+          {
+            "id": "lr5983fa",
+            "icon": "🔒",
+            "title": "Secure Payment",
+            "description": "Protected by PayWithLocus."
+          },
+          {
+            "id": "7gaq3qzg",
+            "icon": "💬",
+            "title": "24/7 Support",
+            "description": "We are always here to help."
+          }
+        ]
+      }
+    ],
+    "repo": "maulana-tech/buildwithlocus",
+    "published_at": "2026-04-23T13:34:08.128Z"
+  }
+}
