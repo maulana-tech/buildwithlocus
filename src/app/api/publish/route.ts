@@ -110,8 +110,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL 
+      || process.env.NEXT_PUBLIC_APP_URL === '${NEXT_PUBLIC_APP_URL}' 
+        ? 'https://svc-mo8f7ext1aijm8nv.buildwithlocus.com'
+        : 'http://localhost:3000';
     const localUrl = `${appUrl}/s/${page.username}`;
+
+    console.log('[Publish] Using appUrl:', appUrl);
 
     return NextResponse.json({
       success: true,
