@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Send, Eye, Palette, Sparkles, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Layers, BarChart3, Plus, ArrowRight, DollarSign, Eye, ShoppingCart, Users, Zap, ExternalLink, TrendingUp, Clock, Send, Sparkles, Loader2 } from 'lucide-react';
 
 import { AppNavbar } from '@/components/AppNavbar';
 import { SectionPalette } from '@/components/builder/SectionPalette';
@@ -36,88 +36,18 @@ function createSection(type: SectionType): PageSection {
     case 'hero':
       return { id, type, headline: 'Welcome to My Store', subtext: 'The best products at the best prices.', cta_label: 'Shop Now', cta_url: '#', alignment: 'center' };
     case 'features':
-      return {
-        id, type, title: 'Why Choose Us', columns: 3,
-        items: [
-          { id: uid(), icon: '⚡', title: 'Fast Delivery', description: 'Get your order in 24 hours.' },
-          { id: uid(), icon: '🔒', title: 'Secure Payment', description: 'Protected by PayWithLocus.' },
-          { id: uid(), icon: '💬', title: '24/7 Support', description: 'We are always here to help.' },
-        ],
-      };
+      return { id, type, title: 'Why Choose Us', columns: 3, items: [{ id: uid(), icon: '⚡', title: 'Fast Delivery', description: 'Get your order in 24 hours.' }, { id: uid(), icon: '🔒', title: 'Secure Payment', description: 'Protected by PayWithLocus.' }, { id: uid(), icon: '💬', title: '24/7 Support', description: 'We are always here to help.' }] };
     case 'pricing':
-      return {
-        id, type, title: 'Pricing Plans', columns: 3,
-        plans: [
-          { id: uid(), name: 'Starter', price: 'Free', period: 'mo', features: ['1 product', 'Basic checkout'], cta_label: 'Get Started', highlighted: false },
-          { id: uid(), name: 'Pro', price: '$9', period: 'mo', features: ['10 products', 'Custom branding', 'Analytics'], cta_label: 'Go Pro', highlighted: true },
-          { id: uid(), name: 'Enterprise', price: '$29', period: 'mo', features: ['Unlimited products', 'Priority support', 'API access'], cta_label: 'Contact Us', highlighted: false },
-        ],
-      };
+      return { id, type, title: 'Pricing Plans', columns: 3, plans: [{ id: uid(), name: 'Starter', price: 'Free', period: 'mo', features: ['1 product', 'Basic checkout'], cta_label: 'Get Started', highlighted: false }, { id: uid(), name: 'Pro', price: '$9', period: 'mo', features: ['10 products', 'Custom branding', 'Analytics'], cta_label: 'Go Pro', highlighted: true }, { id: uid(), name: 'Enterprise', price: '$29', period: 'mo', features: ['Unlimited products', 'Priority support', 'API access'], cta_label: 'Contact Us', highlighted: false }] };
     case 'checkout':
       return { id, type, title: 'Complete Your Purchase', description: 'Secure checkout powered by PayWithLocus.', amount: 150000, currency: 'IDR', payment_methods: ['QRIS', 'Bank Transfer', 'E-Wallet'], cta_label: 'Pay Now' };
     case 'testimonials':
-      return {
-        id, type, title: 'What Customers Say',
-        items: [
-          { id: uid(), name: 'Andi S.', role: 'Small Business Owner', content: 'Super easy to set up. Payments started flowing in minutes.' },
-          { id: uid(), name: 'Maya R.', role: 'Freelancer', content: 'Finally a checkout tool that does not need a developer.' },
-          { id: uid(), name: 'Budi K.', role: 'E-commerce Founder', content: 'The visual builder is a game changer for our team.' },
-        ],
-      };
+      return { id, type, title: 'What Customers Say', items: [{ id: uid(), name: 'Andi S.', role: 'Small Business Owner', content: 'Super easy to set up.' }, { id: uid(), name: 'Maya R.', role: 'Freelancer', content: 'Finally a checkout tool that works.' }, { id: uid(), name: 'Budi K.', role: 'E-commerce Founder', content: 'Game changer for our team.' }] };
     case 'faq':
-      return {
-        id, type, title: 'Frequently Asked Questions',
-        items: [
-          { id: uid(), question: 'How do I receive payments?', answer: 'Payments are processed through PayWithLocus and deposited to your linked bank account.' },
-          { id: uid(), question: 'Is there a setup fee?', answer: 'No. Locus Studio is completely free to use. You only pay transaction fees.' },
-          { id: uid(), question: 'Can I customize the checkout page?', answer: 'Yes! Use the visual builder to match your brand colors, fonts, and layout.' },
-        ],
-      };
+      return { id, type, title: 'Frequently Asked Questions', items: [{ id: uid(), question: 'How do I receive payments?', answer: 'Through PayWithLocus.' }, { id: uid(), question: 'Is there a setup fee?', answer: 'No, free to use.' }, { id: uid(), question: 'Can I customize?', answer: 'Yes, fully customizable.' }] };
     case 'footer':
-      return {
-        id, type, brand_name: 'My Store', tagline: 'Built with Locus Studio',
-        links: [
-          { id: uid(), label: 'Privacy', url: '#' },
-          { id: uid(), label: 'Terms', url: '#' },
-        ],
-        socials: [
-          { id: uid(), platform: 'twitter', url: '#' },
-        ],
-      };
+      return { id, type, brand_name: 'My Store', tagline: 'Built with Locus Studio', links: [{ id: uid(), label: 'Privacy', url: '#' }, { id: uid(), label: 'Terms', url: '#' }], socials: [] };
   }
-}
-
-function generateSectionsFromPrompt(prompt: string): SectionType[] {
-  const p = prompt.toLowerCase();
-  const sections: SectionType[] = [];
-  
-  if (p.includes('hero') || p.includes('landing') || p.includes('welcome') || p.includes('header')) {
-    sections.push('hero');
-  }
-  if (p.includes('feature') || p.includes('benefit') || p.includes('why') || p.includes('service')) {
-    sections.push('features');
-  }
-  if (p.includes('price') || p.includes('pricing') || p.includes('plan') || p.includes(' package') || p.includes('tier')) {
-    sections.push('pricing');
-  }
-  if (p.includes('checkout') || p.includes('pay') || p.includes('buy') || p.includes('purchase') || p.includes('payment')) {
-    sections.push('checkout');
-  }
-  if (p.includes('testimonial') || p.includes('review') || p.includes('feedback') || p.includes('customer')) {
-    sections.push('testimonials');
-  }
-  if (p.includes('faq') || p.includes('question') || p.includes('help') || p.includes('support')) {
-    sections.push('faq');
-  }
-  if (p.includes('footer') || p.includes('contact') || p.includes('about')) {
-    sections.push('footer');
-  }
-  
-  if (sections.length === 0) {
-    sections.push('hero', 'features', 'checkout', 'footer');
-  }
-  
-  return sections;
 }
 
 const DEFAULT_PAGE: PageConfig = {
@@ -125,44 +55,94 @@ const DEFAULT_PAGE: PageConfig = {
   username: 'my_store',
   title: 'My Store',
   theme: 'modern',
-  primary_color: '#6366f1',
-  sections: [
-    createSection('hero'),
-    createSection('features'),
-    createSection('checkout'),
-    createSection('footer'),
-  ],
+  primary_color: '#b7d941',
+  sections: [createSection('hero'), createSection('features'), createSection('checkout'), createSection('footer')],
 };
 
-export default function BuilderPage() {
+type SiteAnalytics = {
+  username: string;
+  title: string;
+  published_at: string;
+  views: number;
+  transactions: Array<{ id: string; method: string; amount: number; status: string; created_at: string }>;
+  revenue: number;
+  currency: string;
+};
+
+type Summary = {
+  totalRevenue: number;
+  totalViews: number;
+  totalTransactions: number;
+  currency: string;
+};
+
+function formatNumber(n: number) {
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return n.toString();
+}
+
+function formatDate(iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+const s = {
+  container: { display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#0f0f10', color: '#fdfdfd' } as React.CSSProperties,
+  tabs: { display: 'flex', gap: 0, padding: 0, background: '#1b1b1c', borderBottom: '1px solid #2a2a2b' } as React.CSSProperties,
+  tab: (active: boolean) => ({
+    display: 'flex', alignItems: 'center', gap: '8px',
+    padding: '12px 20px',
+    background: active ? '#b7d941' : 'transparent',
+    border: 'none',
+    color: active ? '#0f0f10' : '#a0a0a2',
+    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+    letterSpacing: '0.05em', textTransform: 'uppercase' as const,
+  }) as React.CSSProperties,
+  main: { flex: 1, overflow: 'auto', padding: '32px' } as React.CSSProperties,
+  inner: { maxWidth: '1200px', margin: '0 auto' } as React.CSSProperties,
+  heading: { fontSize: '22px', fontWeight: 500, letterSpacing: '-0.005em', marginBottom: '4px', color: '#fdfdfd' } as React.CSSProperties,
+  subtext: { color: '#a0a0a2', fontSize: '13px', marginBottom: '32px', lineHeight: 1.55 } as React.CSSProperties,
+  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1px', marginBottom: '32px', background: '#2a2a2b', border: '1px solid #2a2a2b' } as React.CSSProperties,
+  actions: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1px', marginBottom: '32px', background: '#2a2a2b', border: '1px solid #2a2a2b' } as React.CSSProperties,
+  sectionTitle: { fontSize: '11px', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' as const, color: '#666668', marginBottom: '16px' } as React.CSSProperties,
+  sitesList: { display: 'flex', flexDirection: 'column', gap: '1px', background: '#2a2a2b', border: '1px solid #2a2a2b' } as React.CSSProperties,
+  siteRow: { background: '#1b1b1c', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } as React.CSSProperties,
+  emptyState: { padding: '64px', background: '#1b1b1c', border: '1px solid #2a2a2b', textAlign: 'center' as const } as React.CSSProperties,
+};
+
+export default function DashboardPage() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'builder'>('dashboard');
   const [page, setPage] = useState<PageConfig>(() => loadPage() ?? DEFAULT_PAGE);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [sites, setSites] = useState<SiteAnalytics[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/analytics')
+      .then(r => r.json())
+      .then(data => {
+        setSites(data.sites || []);
+        setSummary(data.summary || null);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   const handlePageChange = useCallback((next: PageConfig) => {
     setPage(next);
     savePage(next);
   }, []);
-
-  const handleAiGenerate = useCallback(async () => {
-    if (!aiPrompt.trim()) return;
-    setIsAiLoading(true);
-    
-    await new Promise(r => setTimeout(r, 800));
-    
-    const types = generateSectionsFromPrompt(aiPrompt);
-    const newSections = types.map(createSection);
-    
-    setPage(prev => ({ ...prev, sections: newSections }));
-    setSelectedId(newSections[0]?.id || null);
-    savePage({ ...page, sections: newSections });
-    
-    setAiPrompt('');
-    setIsAiLoading(false);
-  }, [aiPrompt, page]);
 
   const handleAddSection = useCallback((type: SectionType) => {
     const section = createSection(type);
@@ -184,181 +164,179 @@ export default function BuilderPage() {
   }, []);
 
   const handlePublish = useCallback(async () => {
-    const sharedSites: Record<string, PageConfig & { published_at?: string }> = JSON.parse(
-      localStorage.getItem(SHARED_SITES_KEY) || '{}'
-    );
+    const sharedSites = JSON.parse(localStorage.getItem(SHARED_SITES_KEY) || '{}');
     sharedSites[page.username] = { ...page, published_at: new Date().toISOString() };
     localStorage.setItem(SHARED_SITES_KEY, JSON.stringify(sharedSites));
-
     try {
-      const res = await fetch('/api/publish', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...page,
-          repo: DEFAULT_REPO,
-        }),
-      });
+      const res = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...page, repo: DEFAULT_REPO }) });
       const data = await res.json();
-      console.log('[Publish] Response:', data);
-      if (data.url) {
-        setPublishedUrl(data.url);
-      } else {
-        setPublishedUrl(`${window.location.origin}/s/${page.username}`);
-      }
-    } catch (err) {
-      console.error('[Publish] Error:', err);
+      setPublishedUrl(data.url || `${window.location.origin}/s/${page.username}`);
+    } catch {
       setPublishedUrl(`${window.location.origin}/s/${page.username}`);
     }
-
     setIsPublishOpen(true);
   }, [page]);
 
   const cycleTheme = useCallback(() => {
     const themes: PageConfig['theme'][] = ['modern', 'dark', 'retro', 'glass', 'neon'];
     const idx = themes.indexOf(page.theme);
-    const next = themes[(idx + 1) % themes.length];
-    handlePageChange({ ...page, theme: next });
+    handlePageChange({ ...page, theme: themes[(idx + 1) % themes.length] });
   }, [page, handlePageChange]);
 
+  const handleAiGenerate = useCallback(async () => {
+    if (!aiPrompt.trim()) return;
+    setIsAiLoading(true);
+    await new Promise(r => setTimeout(r, 800));
+    const keywords = aiPrompt.toLowerCase();
+    const types: SectionType[] = [];
+    if (keywords.includes('hero') || keywords.includes('landing')) types.push('hero');
+    if (keywords.includes('feature') || keywords.includes('benefit')) types.push('features');
+    if (keywords.includes('price') || keywords.includes('pricing')) types.push('pricing');
+    if (keywords.includes('checkout') || keywords.includes('pay')) types.push('checkout');
+    if (keywords.includes('testimonial') || keywords.includes('review')) types.push('testimonials');
+    if (keywords.includes('faq') || keywords.includes('question')) types.push('faq');
+    if (keywords.includes('footer')) types.push('footer');
+    if (types.length === 0) types.push('hero', 'features', 'checkout', 'footer');
+    const newSections = types.map(createSection);
+    setPage(prev => ({ ...prev, sections: newSections }));
+    setSelectedId(newSections[0]?.id || null);
+    savePage({ ...page, sections: newSections });
+    setAiPrompt('');
+    setIsAiLoading(false);
+  }, [aiPrompt, page]);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#09090b', color: '#ededef' }}>
+    <div style={s.container}>
       <AppNavbar />
 
-      <header style={{
-        height: '44px',
-        borderBottom: '1px solid #1e1e22',
-        background: '#0c0c0e',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 16px',
-        gap: '12px',
-        flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
-            placeholder="AI: Describe your page..."
-            style={{
-              background: '#151517',
-              border: '1px solid #27272a',
-              borderRadius: '4px',
-              padding: '5px 12px',
-              color: '#ededef',
-              fontSize: '12px',
-              width: '220px',
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
-          <button
-            onClick={handleAiGenerate}
-            disabled={isAiLoading || !aiPrompt.trim()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '5px 10px',
-              fontSize: '11px',
-              fontWeight: 600,
-              background: '#6366f1',
-              border: 'none',
-              borderRadius: '4px',
-              color: '#fff',
-              cursor: isAiLoading ? 'wait' : 'pointer',
-              opacity: isAiLoading ? 0.6 : 1,
-              fontFamily: 'inherit',
-            }}
-          >
-            {isAiLoading ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />}
-            Generate
-          </button>
-        </div>
-
-        <div style={{ width: '1px', height: '20px', background: '#1e1e22' }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontSize: '11px', color: '#52525b' }}>locus.sh/s/</span>
-          <input
-            value={page.username}
-            onChange={(e) => handlePageChange({ ...page, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
-            style={{
-              background: '#151517',
-              border: '1px solid #27272a',
-              borderRadius: '4px',
-              padding: '5px 10px',
-              color: '#ededef',
-              fontSize: '12px',
-              width: '120px',
-              outline: 'none',
-              fontFamily: 'inherit',
-            }}
-          />
-        </div>
-
-        <div style={{ flex: 1 }} />
-
-        <button onClick={cycleTheme} className="builder-props-action" title={`Theme: ${page.theme}`}>
-          <Palette size={14} />
-          <span style={{ fontSize: '10px', marginLeft: '4px', textTransform: 'capitalize' }}>{page.theme}</span>
+      <div style={s.tabs}>
+        <button onClick={() => setActiveTab('dashboard')} style={s.tab(activeTab === 'dashboard')}>
+          <Layers size={14} /> Dashboard
         </button>
-
-        <button
-          onClick={() => window.open(`/s/${page.username}`, '_blank')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '6px 12px',
-            fontSize: '12px',
-            fontWeight: 500,
-            background: 'transparent',
-            border: '1px solid #27272a',
-            borderRadius: '5px',
-            color: '#a1a1aa',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          <Eye size={14} />
-          Preview
+        <button onClick={() => setActiveTab('builder')} style={s.tab(activeTab === 'builder')}>
+          <Zap size={14} /> Builder
         </button>
-
-        <button
-          onClick={handlePublish}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '5px 14px',
-            fontSize: '12px',
-            fontWeight: 600,
-            background: '#6366f1',
-            border: 'none',
-            borderRadius: '4px',
-            color: '#fff',
-            cursor: 'pointer',
-            fontFamily: 'inherit',
-          }}
-        >
-          <Send size={13} />
-          Publish
-        </button>
-      </header>
-
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <SectionPalette onAdd={handleAddSection} />
-        <LivePreview page={page} selectedId={selectedId} onSelect={setSelectedId} />
-        <PropertyPanel page={page} selectedId={selectedId} onChange={handlePageChange} onDelete={handleDeleteSection} />
       </div>
 
-      <PublishModal
-        isOpen={isPublishOpen}
-        onClose={() => setIsPublishOpen(false)}
-        siteUrl={publishedUrl || `/s/${page.username}`}
-      />
+      {activeTab === 'dashboard' ? (
+        <div style={s.main}>
+          <div style={s.inner}>
+            <h1 style={s.heading}>Dashboard</h1>
+            <p style={s.subtext}>Overview of your sites and performance</p>
+
+            <div style={s.statGrid}>
+              <StatCard icon={<DollarSign size={16} />} label="Revenue" value={summary ? `${summary.currency} ${summary.totalRevenue}` : '$0'} accent />
+              <StatCard icon={<ShoppingCart size={16} />} label="Transactions" value={summary?.totalTransactions || 0} />
+              <StatCard icon={<Eye size={16} />} label="Views" value={summary ? formatNumber(summary.totalViews) : '0'} />
+              <StatCard icon={<Layers size={16} />} label="Sites" value={sites.length} />
+            </div>
+
+            <div style={s.actions}>
+              <button onClick={() => setActiveTab('builder')} style={{ padding: '20px', background: '#b7d941', color: '#0f0f10', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer', textAlign: 'left' as const }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, letterSpacing: '-0.005em' }}><Zap size={16} /> New Site</div>
+                  <p style={{ fontSize: '11px', opacity: 0.7, lineHeight: 1.5 }}>Build with AI or from scratch</p>
+                </div>
+                <ArrowRight size={16} />
+              </button>
+              <a href="/analytics" style={{ padding: '20px', background: '#1b1b1c', color: '#fdfdfd', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, letterSpacing: '-0.005em' }}><BarChart3 size={16} /> Analytics</div>
+                  <p style={{ fontSize: '11px', color: '#666668', lineHeight: 1.5 }}>Detailed metrics and history</p>
+                </div>
+                <ArrowRight size={16} color="#666668" />
+              </a>
+            </div>
+
+            <div>
+              <div style={s.sectionTitle}>Your Sites</div>
+              {sites.length === 0 ? (
+                <div style={s.emptyState}>
+                  <Layers size={32} style={{ color: '#2a2a2b', marginBottom: '12px' }} />
+                  <p style={{ color: '#666668', marginBottom: '16px', fontSize: '13px' }}>No published sites yet</p>
+                  <button onClick={() => setActiveTab('builder')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#b7d941', color: '#0f0f10', padding: '10px 20px', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}><Plus size={14} /> Create Site</button>
+                </div>
+              ) : (
+                <div style={s.sitesList}>
+                  {sites.map(site => (
+                    <div key={site.username} style={s.siteRow}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div style={{ width: '40px', height: '40px', background: '#242425', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Layers size={16} color="#666668" />
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#fdfdfd' }}>{site.title}</span>
+                            <span style={{ fontSize: '10px', color: '#666668', background: '#242425', padding: '2px 6px', fontFamily: 'monospace' }}>{site.username}</span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#666668' }}>{formatDate(site.published_at)}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                        <div style={{ display: 'flex', gap: '24px' }}>
+                          <div style={{ textAlign: 'right' as const }}>
+                            <div style={{ fontSize: '15px', fontWeight: 700, color: '#b7d941', fontFamily: 'monospace' }}>{site.revenue}</div>
+                            <div style={{ fontSize: '9px', color: '#666668', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Revenue</div>
+                          </div>
+                          <div style={{ textAlign: 'right' as const }}>
+                            <div style={{ fontSize: '15px', fontWeight: 700, color: '#fdfdfd', fontFamily: 'monospace' }}>{site.views}</div>
+                            <div style={{ fontSize: '9px', color: '#666668', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Views</div>
+                          </div>
+                        </div>
+                        <div style={{ width: '1px', height: '24px', background: '#2a2a2b' }} />
+                        <a href={`/s/${site.username}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', textDecoration: 'none', fontWeight: 500, letterSpacing: '0.03em' }}>
+                          <ExternalLink size={12} /> View
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <header style={{ height: '44px', borderBottom: '1px solid #2a2a2b', background: '#1b1b1c', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()} placeholder="AI: Describe your page..." style={{ background: '#0f0f10', border: '1px solid #2a2a2b', padding: '6px 12px', color: '#fdfdfd', fontSize: '12px', width: '220px', outline: 'none' }} />
+              <button onClick={handleAiGenerate} disabled={isAiLoading || !aiPrompt.trim()} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '11px', fontWeight: 600, background: '#b7d941', border: 'none', color: '#0f0f10', cursor: isAiLoading ? 'wait' : 'pointer', letterSpacing: '0.03em' }}>
+                {isAiLoading ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />} Generate
+              </button>
+            </div>
+            <div style={{ width: '1px', height: '20px', background: '#2a2a2b' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '11px', color: '#666668', fontFamily: 'monospace' }}>locus.sh/s/</span>
+              <input value={page.username} onChange={(e) => handlePageChange({ ...page, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })} style={{ background: '#0f0f10', border: '1px solid #2a2a2b', padding: '6px 10px', color: '#fdfdfd', fontSize: '12px', width: '120px', outline: 'none', fontFamily: 'monospace' }} />
+            </div>
+            <div style={{ flex: 1 }} />
+            <button onClick={cycleTheme} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', cursor: 'pointer', textTransform: 'capitalize' as const, letterSpacing: '0.03em' }}>Theme: {page.theme}</button>
+            <button onClick={() => window.open(`/s/${page.username}`, '_blank')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 500, background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', cursor: 'pointer' }}><Eye size={14} /> Preview</button>
+            <button onClick={handlePublish} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '11px', fontWeight: 600, background: '#b7d941', border: 'none', color: '#0f0f10', cursor: 'pointer', letterSpacing: '0.03em' }}><Send size={13} /> Publish</button>
+          </header>
+          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+            <SectionPalette onAdd={handleAddSection} />
+            <LivePreview page={page} selectedId={selectedId} onSelect={setSelectedId} />
+            <PropertyPanel page={page} selectedId={selectedId} onChange={handlePageChange} onDelete={handleDeleteSection} />
+          </div>
+        </div>
+      )}
+
+      <PublishModal isOpen={isPublishOpen} onClose={() => setIsPublishOpen(false)} siteUrl={publishedUrl || `/s/${page.username}`} />
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value, accent }: { icon: React.ReactNode; label: string; value: string | number; accent?: boolean }) {
+  return (
+    <div style={{ background: '#1b1b1c', padding: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+        <div style={{ width: '28px', height: '28px', background: accent ? 'rgba(183, 217, 65, 0.1)' : '#242425', display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent ? '#b7d941' : '#a0a0a2' }}>
+          {icon}
+        </div>
+        <span style={{ fontSize: '10px', color: '#666668', textTransform: 'uppercase' as const, letterSpacing: '0.06em', fontWeight: 500 }}>{label}</span>
+      </div>
+      <div style={{ fontSize: '24px', fontWeight: 700, fontFamily: 'monospace', color: accent ? '#b7d941' : '#fdfdfd' }}>{value}</div>
     </div>
   );
 }
