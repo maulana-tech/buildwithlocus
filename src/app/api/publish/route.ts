@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { locus } from '@/lib/locus';
 import type { PageConfig, PageSection } from '@/agents/state';
+
+const DEPLOY_FILE = path.join(process.cwd(), 'data/deploy.json');
+
+type DeployState = {
+  projectId: string;
+  serviceId: string;
+  serviceUrl: string;
+  deployedAt: string;
+};
+
+function loadDeployState(): DeployState | null {
+  try {
+    if (fs.existsSync(DEPLOY_FILE)) {
+      return JSON.parse(fs.readFileSync(DEPLOY_FILE, 'utf-8'));
+    }
+  } catch {}
+  return null;
+}
+
+function saveDeployState(state: DeployState) {
+  const dir = path.dirname(DEPLOY_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(DEPLOY_FILE, JSON.stringify(state, null, 2));
+}
 
 function extractCheckoutSections(sections: PageSection[]) {
   return sections.filter((s): s is Extract<PageSection, { type: 'checkout' }> => s.type === 'checkout');
@@ -30,7 +56,6 @@ async function createCheckoutSessions(page: PageConfig) {
         },
       });
       sessions.push({ sectionId: section.id, sessionId: session.id });
-      console.log(`[Publish] Checkout session created: ${session.id} for section ${section.id}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(`[Publish] Session creation failed for ${section.id}:`, msg);
@@ -42,9 +67,7 @@ async function createCheckoutSessions(page: PageConfig) {
 
 function attachSessionIds(page: PageConfig, sessions: Array<{ sectionId: string; sessionId: string }>): PageConfig {
   if (sessions.length === 0) return page;
-
   const sessionMap = Object.fromEntries(sessions.map(s => [s.sectionId, s.sessionId]));
-
   return {
     ...page,
     sections: page.sections.map(section => {
@@ -71,11 +94,25 @@ async function saveToStorage(username: string, page: PageConfig) {
   }
 }
 
-async function deployToBuildWithLocus(page: PageConfig, repo: string) {
+async function handleBuildDeploy(repo: string) {
   const token = await locus.build.exchangeToken();
   if (!token?.token) {
     console.log('[Publish] No BuildWithLocus token, skipping deploy');
     return { deployed: false, url: null, projectId: null };
+  }
+
+  const existing = loadDeployState();
+
+  if (existing?.serviceId) {
+    console.log(`[Publish] Existing service found: ${existing.serviceId}. Triggering redeploy...`);
+    try {
+      const deployment = await locus.build.triggerDeployment(token.token, existing.serviceId);
+      console.log(`[Publish] Redeployment triggered: ${deployment.id}`);
+      return { deployed: true, url: existing.serviceUrl, projectId: existing.projectId, redeployed: true };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[Publish] Redeploy failed, will try fresh:`, msg);
+    }
   }
 
   try {
@@ -84,7 +121,7 @@ async function deployToBuildWithLocus(page: PageConfig, repo: string) {
     console.log(`[Publish] BuildWithLocus credits: $${creditBalance}`);
 
     if (creditBalance < 0.25) {
-      console.warn('[Publish] Insufficient credits for BuildWithLocus deployment');
+      console.warn('[Publish] Insufficient credits for new service');
       return { deployed: false, url: null, projectId: null, reason: 'insufficient_credits' };
     }
   } catch (err: unknown) {
@@ -92,11 +129,22 @@ async function deployToBuildWithLocus(page: PageConfig, repo: string) {
   }
 
   try {
-    const data = await locus.build.deployFromRepo(token.token, { name: page.username, repo });
-    const deployUrl = data.project?.url || data.services?.[0]?.url || null;
+    const data = await locus.build.deployFromRepo(token.token, { name: 'locus-studio', repo });
     const projectId = data.project?.id || null;
-    console.log(`[Publish] BuildWithLocus deployed: ${deployUrl}`);
-    return { deployed: true, url: deployUrl, projectId };
+    const serviceId = data.services?.[0]?.id || data.service?.id || null;
+    const serviceUrl = data.project?.url || data.services?.[0]?.url || null;
+
+    if (serviceId && serviceUrl) {
+      saveDeployState({
+        projectId: projectId || '',
+        serviceId,
+        serviceUrl,
+        deployedAt: new Date().toISOString(),
+      });
+      console.log(`[Publish] New deployment: ${serviceUrl}`);
+    }
+
+    return { deployed: true, url: serviceUrl, projectId, redeployed: false };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn('[Publish] BuildWithLocus deploy failed:', msg);
@@ -119,12 +167,12 @@ export async function POST(req: NextRequest) {
 
     const saved = await saveToStorage(page.username, enrichedPage);
 
-    let deployResult = { deployed: false, url: null as string | null, projectId: null as string | null };
+    let deployResult = { deployed: false, url: null as string | null, projectId: null as string | null, redeployed: false };
     if (repo) {
-      deployResult = await deployToBuildWithLocus(page, repo) as typeof deployResult;
+      deployResult = await handleBuildDeploy(repo) as typeof deployResult;
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = deployResult.url || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const localUrl = `${appUrl}/s/${page.username}`;
 
     return NextResponse.json({
@@ -132,6 +180,7 @@ export async function POST(req: NextRequest) {
       url: deployResult.url || localUrl,
       deployedVia: deployResult.deployed ? 'buildwithlocus' : 'local',
       projectId: deployResult.projectId,
+      redeployed: deployResult.redeployed,
       storage: saved ? 'server' : 'local',
       checkoutSessions: sessions.length,
       page: {
