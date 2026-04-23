@@ -7,12 +7,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SITES_FILE = path.join(__dirname, '../../../../data/sites.json');
 
 function loadSites(): Record<string, unknown> {
+  console.log('[Sites] Loading from:', SITES_FILE);
   try {
     if (fs.existsSync(SITES_FILE)) {
       const raw = fs.readFileSync(SITES_FILE, 'utf-8');
+      console.log('[Sites] File exists, size:', raw.length);
       return JSON.parse(raw);
     }
-  } catch {}
+  } catch (err) {
+    console.error('[Sites] Load error:', err);
+  }
+  console.log('[Sites] No file, returning empty');
   return {};
 }
 
