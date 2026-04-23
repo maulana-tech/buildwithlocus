@@ -118,6 +118,7 @@ export type CheckoutSection = {
   currency: string;
   payment_methods: string[];
   cta_label: string;
+  checkoutSessionId?: string;
 };
 
 export type TestimonialsSection = {
