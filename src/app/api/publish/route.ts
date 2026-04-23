@@ -24,7 +24,9 @@ async function getBuildToken(): Promise<string | null> {
 
 async function saveToStorage(username: string, page: PageConfig) {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/sites`, {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const saveUrl = baseUrl.includes('localhost') ? 'http://localhost:3000' : baseUrl;
+    const res = await fetch(`${saveUrl}/api/sites`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, page }),
@@ -110,10 +112,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL 
-      || process.env.NEXT_PUBLIC_APP_URL === '${NEXT_PUBLIC_APP_URL}' 
-        ? 'https://svc-mo8f7ext1aijm8nv.buildwithlocus.com'
-        : 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://svc-moba0odjul0rjfgy.buildwithlocus.com';
     const localUrl = `${appUrl}/s/${page.username}`;
 
     console.log('[Publish] Using appUrl:', appUrl);

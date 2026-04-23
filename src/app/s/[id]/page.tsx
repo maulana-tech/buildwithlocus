@@ -250,13 +250,14 @@ useEffect(() => {
     async function load() {
       console.log('[Site] Starting load for:', id);
       try {
-        const res = await fetch(`/api/sites?username=${id}`);
+        // Use full URL
+        const baseUrl = 'https://svc-moba0odjul0rjfgy.buildwithlocus.com';
+        const res = await fetch(`${baseUrl}/api/sites?username=${id}`);
         console.log('[Site] Response status:', res.status);
         
         if (res.ok) {
           const data = await res.json();
           console.log('[Site] Data sections:', data.sections?.length);
-          console.log('[Site] Data keys:', Object.keys(data));
           
           if (data.sections && data.sections.length > 0) {
             console.log('[Site] Setting page');
