@@ -116,6 +116,9 @@ export default function LandingPage() {
         <Link href="/dashboard" className="landing-btn" style={{ background: ACCENT, color: '#0f0f10', fontFamily: HEADLINE, fontWeight: 700, textTransform: 'uppercase', padding: '8px 24px', fontSize: '12px', textDecoration: 'none', transition: 'opacity 0.2s', letterSpacing: '0.05em' }}>
           Open Studio
         </Link>
+        <Link href="/dashboard?demo=1" className="landing-btn-outline" style={{ border: `1px solid #2a2a2b`, color: '#a0a0a2', fontFamily: HEADLINE, fontWeight: 700, textTransform: 'uppercase', padding: '8px 24px', fontSize: '12px', textDecoration: 'none', letterSpacing: '0.05em' }}>
+          Try Demo
+        </Link>
       </header>
 
       <main style={{ paddingTop: '80px' }}>
