@@ -8,7 +8,7 @@ Merchants build professional landing pages and checkout sites using a **visual s
 
 ## Live Demo
 
-**Production URL:** https://svc-mo8f7ext1aijm8nv.buildwithlocus.com
+**Production URL:** https://svc-mob8yu5idjbw474r.buildwithlocus.com
 
 - **Studio:** `/dashboard` — Section-based page builder
 - **Analytics:** `/analytics` — Revenue + transaction tracking
