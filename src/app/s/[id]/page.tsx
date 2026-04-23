@@ -1,19 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import {
-  Star,
-  ChevronDown,
-  ExternalLink,
-  ArrowRight,
-  ShieldCheck,
-} from 'lucide-react';
+import React, { useState, useEffect, use } from 'react';
+import { Star, ChevronDown, ArrowRight } from 'lucide-react';
 import type { PageConfig, PageSection } from '@/agents/state';
 
 const SHARED_SITES_KEY = 'locus_shared_sites';
-const APP_URL = typeof window !== 'undefined' ? window.location.origin : '';
 
 function loadFromStorage(username: string): Record<string, unknown> {
   if (typeof window === 'undefined') return {};
@@ -36,30 +27,11 @@ const THEME_STYLES: Record<string, { bg: string; text: string; accent: string; c
 function HeroSection({ section, theme }: { section: Extract<PageSection, { type: 'hero' }>; theme: string }) {
   const s = THEME_STYLES[theme] || THEME_STYLES.modern;
   return (
-    <section style={{
-      padding: '80px 32px',
-      textAlign: section.alignment as 'left' | 'center' | 'right',
-      background: section.background_image
-        ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${section.background_image}) center/cover`
-        : s.bg,
-      color: section.background_image ? '#fff' : s.text,
-      minHeight: '50vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: section.alignment === 'center' ? 'center' : section.alignment === 'right' ? 'flex-end' : 'flex-start',
-    }}>
+    <section style={{ padding: '80px 32px', textAlign: section.alignment as 'left' | 'center' | 'right', background: s.bg, color: s.text, minHeight: '50vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: section.alignment === 'center' ? 'center' : section.alignment === 'right' ? 'flex-end' : 'flex-start' }}>
       <div style={{ maxWidth: '720px' }}>
-        <h1 style={{ fontSize: 'clamp(28px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.1, marginBottom: '16px' }}>{section.headline}</h1>
-        <p style={{ fontSize: 'clamp(14px, 2vw, 18px)', opacity: 0.7, marginBottom: '32px', lineHeight: 1.6 }}>{section.subtext}</p>
-        {section.cta_label && (
-          <a
-            href={section.cta_url || '#'}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: s.accent, color: '#fff', padding: '14px 32px', fontSize: '16px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none', transition: 'opacity 0.2s' }}
-          >
-            {section.cta_label} <ArrowRight size={16} />
-          </a>
-        )}
+        <h1 style={{ fontSize: 'clamp(28px,5vw,56px)', fontWeight: 800, lineHeight: 1.1, marginBottom: '16px' }}>{section.headline}</h1>
+        <p style={{ fontSize: 'clamp(14px,2vw,18px)', opacity: 0.7, marginBottom: '32px', lineHeight: 1.6 }}>{section.subtext}</p>
+        {section.cta_label && <a href={section.cta_url || '#'} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: s.accent, color: '#fff', padding: '14px 32px', fontSize: '16px', fontWeight: 700, borderRadius: '6px', textDecoration: 'none' }}>{section.cta_label} <ArrowRight size={16} /></a>}
       </div>
     </section>
   );
@@ -71,145 +43,23 @@ function FeaturesSection({ section, theme }: { section: Extract<PageSection, { t
     <section style={{ padding: '64px 32px', background: s.sectionAlt, color: s.text }}>
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         {section.title && <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '40px', textAlign: 'center' }}>{section.title}</h2>}
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${section.columns}, 1fr)`, gap: '24px' }}>
-          {section.items.map((item) => (
-            <div key={item.id} style={{ padding: '28px', background: s.cardBg, border: `1px solid ${s.cardBorder}`, borderRadius: '8px' }}>
-              <div style={{ fontSize: '28px', marginBottom: '12px' }}>{item.icon || '\u25CF'}</div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{item.title}</h3>
-              <p style={{ fontSize: '14px', opacity: 0.65, lineHeight: 1.6 }}>{item.description}</p>
-            </div>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${section.columns},1fr)`, gap: '24px' }}>
+          {section.items.map((item) => <div key={item.id} style={{ padding: '28px', background: s.cardBg, border: `1px solid ${s.cardBorder}`, borderRadius: '8px' }}><div style={{ fontSize: '28px', marginBottom: '12px' }}>{item.icon || '\u25CF'}</div><h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{item.title}</h3><p style={{ fontSize: '14px', opacity: 0.65, lineHeight: 1.6 }}>{item.description}</p></div>)}
         </div>
       </div>
     </section>
   );
 }
 
-function PricingSection({ section, theme }: { section: Extract<PageSection, { type: 'pricing' }>; theme: string }) {
-  const s = THEME_STYLES[theme] || THEME_STYLES.modern;
+function CheckoutSection({ section, theme }: { section: Extract<PageSection, { type: 'checkout' }>; theme: string }) {
   return (
-    <section style={{ padding: '64px 32px', background: s.bg, color: s.text }}>
-      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-        {section.title && <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '40px', textAlign: 'center' }}>{section.title}</h2>}
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(section.columns, section.plans.length)}, 1fr)`, gap: '20px' }}>
-          {section.plans.map((plan) => (
-            <div key={plan.id} style={{
-              padding: '32px',
-              background: plan.highlighted ? (theme === 'dark' || theme === 'neon' ? '#1a1a2e' : '#eef2ff') : s.cardBg,
-              border: plan.highlighted ? `2px solid ${s.accent}` : `1px solid ${s.cardBorder}`,
-              borderRadius: '8px',
-              textAlign: 'center',
-            }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{plan.name}</h3>
-              <div style={{ fontSize: '36px', fontWeight: 800, marginBottom: '4px' }}>{plan.price}<span style={{ fontSize: '14px', fontWeight: 400, opacity: 0.5 }}>/{plan.period}</span></div>
-              <div style={{ margin: '20px 0', textAlign: 'left' }}>
-                {plan.features.map((f, i) => (
-                  <div key={i} style={{ fontSize: '14px', padding: '6px 0', opacity: 0.7, borderBottom: `1px solid ${s.cardBorder}` }}>{'\u2713'} {f}</div>
-                ))}
-              </div>
-              <button style={{
-                width: '100%', padding: '12px', fontSize: '14px', fontWeight: 700,
-                background: plan.highlighted ? s.accent : s.cardBg, color: plan.highlighted ? '#fff' : s.text,
-                border: `1px solid ${s.cardBorder}`, borderRadius: '6px', cursor: 'pointer',
-              }}>
-                {plan.cta_label}
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function CheckoutSectionPublic({ section, theme, checkoutUrl }: { section: Extract<PageSection, { type: 'checkout' }>; theme: string; checkoutUrl?: string }) {
-  const s = THEME_STYLES[theme] || THEME_STYLES.modern;
-  const payUrl = checkoutUrl || `https://checkout.paywithlocus.com`;
-  return (
-    <section style={{ padding: '64px 32px', background: s.sectionAlt, color: s.text }}>
-      <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
-        {section.title && <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>{section.title}</h2>}
-        <p style={{ fontSize: '14px', opacity: 0.6, marginBottom: '24px' }}>{section.description}</p>
-        <div style={{
-          padding: '28px', background: s.cardBg, border: `1px solid ${s.cardBorder}`, borderRadius: '8px',
-          borderLeft: `4px solid ${s.accent}`, textAlign: 'left',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: s.accent }}>
-              Locus Pay
-            </span>
-            <ShieldCheck size={16} color={s.accent} />
-          </div>
-          <div style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px' }}>
-            {section.currency} {section.amount.toLocaleString()}
-          </div>
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-            {section.payment_methods.map((m) => (
-              <span key={m} style={{ fontSize: '11px', padding: '4px 10px', background: s.bg, borderRadius: '4px', border: `1px solid ${s.cardBorder}` }}>{m}</span>
-            ))}
-          </div>
-          <a href={payUrl} target="_blank" rel="noopener noreferrer" style={{
-            width: '100%', padding: '14px', fontSize: '16px', fontWeight: 700,
-            background: s.accent, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none',
-          }}>
-            {section.cta_label} <ArrowRight size={16} />
-          </a>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function TestimonialsSection({ section, theme }: { section: Extract<PageSection, { type: 'testimonials' }>; theme: string }) {
-  const s = THEME_STYLES[theme] || THEME_STYLES.modern;
-  return (
-    <section style={{ padding: '64px 32px', background: s.bg, color: s.text }}>
-      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-        {section.title && <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '40px', textAlign: 'center' }}>{section.title}</h2>}
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(3, section.items.length)}, 1fr)`, gap: '20px' }}>
-          {section.items.map((item) => (
-            <div key={item.id} style={{ padding: '24px', background: s.cardBg, border: `1px solid ${s.cardBorder}`, borderRadius: '8px' }}>
-              <div style={{ display: 'flex', gap: '2px', marginBottom: '12px' }}>
-                {[1, 2, 3, 4, 5].map((n) => <Star key={n} size={14} fill="#f59e0b" color="#f59e0b" />)}
-              </div>
-              <p style={{ fontSize: '14px', lineHeight: 1.6, opacity: 0.8, marginBottom: '16px', fontStyle: 'italic' }}>&ldquo;{item.content}&rdquo;</p>
-              <div style={{ fontSize: '14px', fontWeight: 700 }}>{item.name}</div>
-              <div style={{ fontSize: '12px', opacity: 0.5 }}>{item.role}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FaqSection({ section, theme }: { section: Extract<PageSection, { type: 'faq' }>; theme: string }) {
-  const s = THEME_STYLES[theme] || THEME_STYLES.modern;
-  const [openId, setOpenId] = useState<string | null>(null);
-  return (
-    <section style={{ padding: '64px 32px', background: s.sectionAlt, color: s.text }}>
-      <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-        {section.title && <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '32px', textAlign: 'center' }}>{section.title}</h2>}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {section.items.map((item) => (
-            <div key={item.id} style={{ background: s.cardBg, border: `1px solid ${s.cardBorder}`, borderRadius: '8px', overflow: 'hidden' }}>
-              <button
-                onClick={() => setOpenId(openId === item.id ? null : item.id)}
-                style={{
-                  width: '100%', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontFamily: 'inherit', fontSize: '15px', fontWeight: 600, textAlign: 'left',
-                }}
-              >
-                {item.question}
-                <ChevronDown size={16} style={{ transform: openId === item.id ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }} />
-              </button>
-              {openId === item.id && (
-                <div style={{ padding: '0 20px 16px', fontSize: '14px', lineHeight: 1.6, opacity: 0.7 }}>{item.answer}</div>
-              )}
-            </div>
-          ))}
-        </div>
+    <section style={{ padding: '64px 32px', background: '#fff', color: '#111', textAlign: 'center' }}>
+      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        {section.title && <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '12px' }}>{section.title}</h2>}
+        <p style={{ fontSize: '16px', opacity: 0.6, marginBottom: '24px' }}>{section.description}</p>
+        <div style={{ fontSize: '48px', fontWeight: 800, marginBottom: '24px' }}>{section.currency} {section.amount.toLocaleString()}</div>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>{section.payment_methods.map((m) => <span key={m} style={{ fontSize: '12px', padding: '6px 12px', background: '#f3f4f6', borderRadius: '4px' }}>{m}</span>)}</div>
+        <button style={{ background: '#6366f1', color: '#fff', padding: '16px 48px', fontSize: '16px', fontWeight: 700, borderRadius: '8px', border: 'none', cursor: 'pointer' }}>{section.cta_label}</button>
       </div>
     </section>
   );
@@ -218,91 +68,49 @@ function FaqSection({ section, theme }: { section: Extract<PageSection, { type: 
 function FooterSection({ section, theme }: { section: Extract<PageSection, { type: 'footer' }>; theme: string }) {
   const s = THEME_STYLES[theme] || THEME_STYLES.modern;
   return (
-    <footer style={{ padding: '32px', background: theme === 'dark' || theme === 'neon' ? '#050505' : '#111', color: '#888', borderTop: `1px solid ${s.cardBorder}` }}>
-      <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '24px' }}>
-        <div>
-          <div style={{ fontSize: '16px', fontWeight: 700, color: s.text, marginBottom: '4px' }}>{section.brand_name}</div>
-          <div style={{ fontSize: '12px', opacity: 0.5 }}>{section.tagline}</div>
-        </div>
-        <div style={{ display: 'flex', gap: '20px' }}>
-          {section.links.map((l) => (
-            <a key={l.id} href={l.url} style={{ fontSize: '12px', color: '#888', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {l.label} <ExternalLink size={10} />
-            </a>
-          ))}
-        </div>
-      </div>
-      <div style={{ maxWidth: '960px', margin: '16px auto 0', textAlign: 'center', fontSize: '11px', opacity: 0.3 }}>
-        Powered by Locus Studio &mdash; BuildWithLocus
+    <footer style={{ padding: '40px 32px', background: s.bg, color: '#999', borderTop: `1px solid ${s.cardBorder}` }}>
+      <div style={{ maxWidth: '960px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div><div style={{ fontSize: '16px', fontWeight: 700, color: s.text, marginBottom: '4px' }}>{section.brand_name}</div><div style={{ fontSize: '12px', opacity: 0.6 }}>{section.tagline}</div></div>
+        <div style={{ display: 'flex', gap: '24px' }}>{section.links.map((l) => <a key={l.id} href={l.url} style={{ fontSize: '12px', color: '#999', textDecoration: 'none' }}>{l.label}</a>)}</div>
       </div>
     </footer>
   );
 }
 
-export default function PublicSitePage() {
-  const params = useParams();
-  const id = params.id as string;
+export default function SitePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [page, setPage] = useState<PageConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-    console.log('[Site] useEffect for:', id);
+  useEffect(() => {
     async function load() {
-      console.log('[Site] Starting load for:', id);
       try {
-        // Use relative URL - works for both local and production
         const res = await fetch(`/api/sites?username=${id}`);
-        console.log('[Site] Response status:', res.status);
-        
         if (res.ok) {
           const data = await res.json();
-          console.log('[Site] Data:', JSON.stringify(data).slice(0, 100));
-          if (data.sections?.length) {
-            setPage(data);
-            console.log('[Site] Set page');
-          }
+          if (data.sections?.length) setPage(data);
         }
-      } catch (err) {
-        console.error('[Site] Error:', err);
-      }
+        const local = loadFromStorage(id);
+        if (local[id]) setPage(local[id] as PageConfig);
+      } catch (e) { console.error(e); }
       setLoading(false);
     }
     load();
   }, [id]);
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0c', color: '#fff' }}>
-        <p>Loading...</p>
-      </div>
-    );
-  }
-
-  if (!page) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', padding: '40px' }}>
-        <h1>404 - No page for {id}</h1>
-        <p>No page data</p>
-      </div>
-);
-}
+  if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  if (!page) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', padding: '40px' }}><h1>404 - Site not found</h1></div>;
 
   return (
     <div style={{ minHeight: '100vh', background: THEME_STYLES[page.theme]?.bg || '#fff' }}>
-      <title>{page.title} &mdash; Locus Studio</title>
-      {page.sections.map((section) => (
-        <React.Fragment key={section.id}>
-          {section.type === 'hero' && <HeroSection section={section} theme={page.theme} />}
-          {section.type === 'features' && <FeaturesSection section={section} theme={page.theme} />}
-          {section.type === 'pricing' && <PricingSection section={section} theme={page.theme} />}
-          {section.type === 'checkout' && <CheckoutSectionPublic section={section} theme={page.theme} />}
-          {section.type === 'testimonials' && <TestimonialsSection section={section} theme={page.theme} />}
-          {section.type === 'faq' && <FaqSection section={section} theme={page.theme} />}
-          {section.type === 'footer' && <FooterSection section={section} theme={page.theme} />}
+      {page.sections.map((s) => (
+        <React.Fragment key={s.id}>
+          {s.type === 'hero' && <HeroSection section={s} theme={page.theme} />}
+          {s.type === 'features' && <FeaturesSection section={s} theme={page.theme} />}
+          {s.type === 'checkout' && <CheckoutSection section={s} theme={page.theme} />}
+          {s.type === 'footer' && <FooterSection section={s} theme={page.theme} />}
         </React.Fragment>
       ))}
     </div>
-);
+  );
 }
-
-export default SitePage;
