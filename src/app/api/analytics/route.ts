@@ -1,10 +1,9 @@
+import fs from 'fs';
+import path from 'path';
 import { NextRequest, NextResponse } from 'next/server';
 import type { SiteAnalytics, Transaction } from '@/agents/state';
 
 const STORAGE_FILE = path.join(process.cwd(), 'data/sites.json');
-
-import fs from 'fs';
-import path from 'path';
 
 function loadAnalytics(): Record<string, SiteAnalytics> {
   console.log('[Analytics] Loading from:', STORAGE_FILE);
