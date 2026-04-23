@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Layers, BarChart3, Plus, ArrowRight, DollarSign, Eye, ShoppingCart, Users, Zap, ExternalLink, TrendingUp, Clock, Send, Sparkles, Loader2, Play } from 'lucide-react';
+import { Layers, Plus, ArrowRight, DollarSign, Eye, ShoppingCart, Zap, ExternalLink, Send, Sparkles, Loader2, Play, Save, Pencil, Check, Copy, CreditCard, AlertCircle } from 'lucide-react';
 
 import { AppNavbar } from '@/components/AppNavbar';
 import { SectionPalette } from '@/components/builder/SectionPalette';
@@ -128,16 +128,6 @@ function formatDate(iso: string) {
 
 const s = {
   container: { display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#0f0f10', color: '#fdfdfd' } as React.CSSProperties,
-  tabs: { display: 'flex', gap: 0, padding: 0, background: '#1b1b1c', borderBottom: '1px solid #2a2a2b' } as React.CSSProperties,
-  tab: (active: boolean) => ({
-    display: 'flex', alignItems: 'center', gap: '8px',
-    padding: '12px 20px',
-    background: active ? '#b7d941' : 'transparent',
-    border: 'none',
-    color: active ? '#0f0f10' : '#a0a0a2',
-    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
-    letterSpacing: '0.05em', textTransform: 'uppercase' as const,
-  }) as React.CSSProperties,
   main: { flex: 1, overflow: 'auto', padding: '32px' } as React.CSSProperties,
   inner: { maxWidth: '1200px', margin: '0 auto' } as React.CSSProperties,
   heading: { fontSize: '22px', fontWeight: 500, letterSpacing: '-0.005em', marginBottom: '4px', color: '#fdfdfd' } as React.CSSProperties,
@@ -177,6 +167,16 @@ function DashboardContent() {
   const [sites, setSites] = useState<SiteAnalytics[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [publishLoading, setPublishLoading] = useState(false);
+  const [plAmount, setPlAmount] = useState('');
+  const [plCurrency, setPlCurrency] = useState('USD');
+  const [plDescription, setPlDescription] = useState('');
+  const [plLoading, setPlLoading] = useState(false);
+  const [plResult, setPlResult] = useState<{ url: string; sessionId: string } | null>(null);
+  const [plError, setPlError] = useState<string | null>(null);
+  const [plCopied, setPlCopied] = useState(false);
 
   useEffect(() => {
     fetch('/api/analytics')
@@ -214,17 +214,31 @@ function DashboardContent() {
   }, []);
 
   const handlePublish = useCallback(async () => {
+    setPublishLoading(true);
+    setPublishError(null);
     const sharedSites = JSON.parse(localStorage.getItem(SHARED_SITES_KEY) || '{}');
     sharedSites[page.username] = { ...page, published_at: new Date().toISOString() };
     localStorage.setItem(SHARED_SITES_KEY, JSON.stringify(sharedSites));
     try {
-      const res = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...page, repo: DEFAULT_REPO }) });
+      const res = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...page, repo: DEFAULT_REPO }),
+      });
       const data = await res.json();
-      setPublishedUrl(data.url || `${window.location.origin}/s/${page.username}`);
-    } catch {
+      if (!res.ok) {
+        setPublishError(data.error || 'Publish failed');
+        setPublishedUrl(`${window.location.origin}/s/${page.username}`);
+      } else {
+        setPublishedUrl(data.url || `${window.location.origin}/s/${page.username}`);
+      }
+    } catch (err) {
+      setPublishError(err instanceof Error ? err.message : 'Network error');
       setPublishedUrl(`${window.location.origin}/s/${page.username}`);
+    } finally {
+      setPublishLoading(false);
+      setIsPublishOpen(true);
     }
-    setIsPublishOpen(true);
   }, [page]);
 
   const startDemo = useCallback(() => {
@@ -240,6 +254,54 @@ function DashboardContent() {
     const idx = themes.indexOf(page.theme);
     handlePageChange({ ...page, theme: themes[(idx + 1) % themes.length] });
   }, [page, handlePageChange]);
+
+  const handleSave = useCallback(() => {
+    savePage(page);
+    const now = new Date();
+    setSavedAt(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+    setTimeout(() => setSavedAt(null), 3000);
+  }, [page]);
+
+  const handleEditSite = useCallback((site: SiteAnalytics) => {
+    const sharedSites = JSON.parse(localStorage.getItem(SHARED_SITES_KEY) || '{}');
+    const siteData = sharedSites[site.username];
+    if (siteData) {
+      setPage(siteData);
+      savePage(siteData);
+      setSelectedId(siteData.sections?.[0]?.id || null);
+    } else {
+      setPage({ ...DEFAULT_PAGE, username: site.username, title: site.title });
+    }
+    setActiveTab('builder');
+  }, []);
+
+  const handleCreatePaymentLink = useCallback(async () => {
+    if (!plAmount || parseFloat(plAmount) <= 0) {
+      setPlError('Enter a valid amount');
+      return;
+    }
+    setPlLoading(true);
+    setPlError(null);
+    setPlResult(null);
+    try {
+      const res = await fetch('/api/payment-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: plAmount,
+          currency: plCurrency,
+          description: plDescription || `Payment ${plAmount} ${plCurrency}`,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create payment link');
+      setPlResult({ url: data.checkoutUrl, sessionId: data.sessionId });
+    } catch (err) {
+      setPlError(err instanceof Error ? err.message : 'Failed to create payment link');
+    } finally {
+      setPlLoading(false);
+    }
+  }, [plAmount, plCurrency, plDescription]);
 
   const handleAiGenerate = useCallback(async () => {
     if (!aiPrompt.trim()) return;
@@ -265,16 +327,7 @@ function DashboardContent() {
 
   return (
     <div style={s.container}>
-      <AppNavbar />
-
-      <div style={s.tabs}>
-        <button onClick={() => setActiveTab('dashboard')} style={s.tab(activeTab === 'dashboard')}>
-          <Layers size={14} /> Dashboard
-        </button>
-        <button onClick={() => setActiveTab('builder')} style={s.tab(activeTab === 'builder')}>
-          <Zap size={14} /> Builder
-        </button>
-      </div>
+      <AppNavbar activeTab={activeTab} onTabChange={setActiveTab} />
 
       {activeTab === 'dashboard' ? (
         <div style={s.main}>
@@ -345,6 +398,9 @@ function DashboardContent() {
                           </div>
                         </div>
                         <div style={{ width: '1px', height: '24px', background: '#2a2a2b' }} />
+                        <button onClick={() => handleEditSite(site)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', cursor: 'pointer', fontWeight: 500, letterSpacing: '0.03em' }}>
+                          <Pencil size={12} /> Edit
+                        </button>
                         <a href={`/s/${site.username}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', textDecoration: 'none', fontWeight: 500, letterSpacing: '0.03em' }}>
                           <ExternalLink size={12} /> View
                         </a>
@@ -354,11 +410,57 @@ function DashboardContent() {
                 </div>
               )}
             </div>
+
+            <div style={{ marginTop: '32px' }}>
+              <div style={s.sectionTitle}>Create Payment Link</div>
+              <div style={{ background: '#1b1b1c', border: '1px solid #2a2a2b', padding: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px', fontWeight: 500 }}>Amount</label>
+                    <input value={plAmount} onChange={(e) => setPlAmount(e.target.value)} placeholder="0.00" type="number" step="any" style={{ width: '100%', background: '#0f0f10', border: '1px solid #2a2a2b', padding: '8px 12px', color: '#fdfdfd', fontSize: '13px', outline: 'none', fontFamily: 'monospace' }} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px', fontWeight: 500 }}>Currency</label>
+                    <select value={plCurrency} onChange={(e) => setPlCurrency(e.target.value)} style={{ width: '100%', background: '#0f0f10', border: '1px solid #2a2a2b', padding: '8px 12px', color: '#fdfdfd', fontSize: '13px', outline: 'none' }}>
+                      <option value="USD">USD</option>
+                      <option value="USDC">USDC</option>
+                      <option value="IDR">IDR</option>
+                      <option value="EUR">EUR</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '10px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px', fontWeight: 500 }}>Description</label>
+                    <input value={plDescription} onChange={(e) => setPlDescription(e.target.value)} placeholder="e.g. Premium Subscription" style={{ width: '100%', background: '#0f0f10', border: '1px solid #2a2a2b', padding: '8px 12px', color: '#fdfdfd', fontSize: '13px', outline: 'none' }} />
+                  </div>
+                </div>
+                <button onClick={handleCreatePaymentLink} disabled={plLoading || !plAmount} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', background: '#b7d941', border: 'none', color: '#0f0f10', fontSize: '11px', fontWeight: 600, cursor: plLoading ? 'wait' : 'pointer', letterSpacing: '0.03em', textTransform: 'uppercase' as const, opacity: plLoading || !plAmount ? 0.5 : 1 }}>
+                  {plLoading ? <Loader2 size={12} className="spin" /> : <CreditCard size={12} />} {plLoading ? 'Creating...' : 'Create Payment Link'}
+                </button>
+                {plError && (
+                  <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                    <AlertCircle size={14} color="#ef4444" />
+                    <span style={{ fontSize: '12px', color: '#ef4444' }}>{plError}</span>
+                  </div>
+                )}
+                {plResult && (
+                  <div style={{ marginTop: '12px', padding: '14px', background: '#0f0f10', border: '1px solid #2a2a2b' }}>
+                    <div style={{ fontSize: '10px', color: '#666668', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px', fontWeight: 500 }}>Payment Link Created</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input readOnly value={plResult.url} style={{ flex: 1, background: '#1b1b1c', border: '1px solid #2a2a2b', padding: '8px 12px', color: '#b7d941', fontSize: '12px', fontFamily: 'monospace', outline: 'none' }} />
+                      <button onClick={() => { navigator.clipboard.writeText(plResult.url); setPlCopied(true); setTimeout(() => setPlCopied(false), 2000); }} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 12px', background: '#242425', border: '1px solid #2a2a2b', color: '#fdfdfd', fontSize: '11px', cursor: 'pointer', whiteSpace: 'nowrap' as const }}>
+                        {plCopied ? <Check size={12} color="#b7d941" /> : <Copy size={12} />} {plCopied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#666668', marginTop: '6px', fontFamily: 'monospace' }}>Session: {plResult.sessionId}</div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <div>
-          <header style={{ height: '44px', borderBottom: '1px solid #2a2a2b', background: '#1b1b1c', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+          <div style={{ height: '44px', flexShrink: 0, borderBottom: '1px solid #2a2a2b', background: '#1b1b1c', display: 'flex', alignItems: 'center', padding: '0 16px', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <input value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()} placeholder="AI: Describe your page..." style={{ background: '#0f0f10', border: '1px solid #2a2a2b', padding: '6px 12px', color: '#fdfdfd', fontSize: '12px', width: '220px', outline: 'none' }} />
               <button onClick={handleAiGenerate} disabled={isAiLoading || !aiPrompt.trim()} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px', fontSize: '11px', fontWeight: 600, background: '#b7d941', border: 'none', color: '#0f0f10', cursor: isAiLoading ? 'wait' : 'pointer', letterSpacing: '0.03em' }}>
@@ -373,8 +475,14 @@ function DashboardContent() {
             <div style={{ flex: 1 }} />
             <button onClick={cycleTheme} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', cursor: 'pointer', textTransform: 'capitalize' as const, letterSpacing: '0.03em' }}>Theme: {page.theme}</button>
             <button onClick={() => window.open(`/s/${page.username}`, '_blank')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '11px', fontWeight: 500, background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', cursor: 'pointer' }}><Eye size={14} /> Preview</button>
-            <button onClick={handlePublish} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '11px', fontWeight: 600, background: '#b7d941', border: 'none', color: '#0f0f10', cursor: 'pointer', letterSpacing: '0.03em' }}><Send size={13} /> Publish</button>
-          </header>
+            <button onClick={handleSave} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '11px', fontWeight: 600, background: savedAt ? '#1b3a1b' : 'transparent', border: savedAt ? '1px solid #2a5a2a' : '1px solid #2a2a2b', color: savedAt ? '#b7d941' : '#a0a0a2', cursor: 'pointer', letterSpacing: '0.03em' }}>
+              {savedAt ? <Check size={13} /> : <Save size={13} />} {savedAt ? `Saved ${savedAt}` : 'Save'}
+            </button>
+            <button onClick={handlePublish} disabled={publishLoading} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '11px', fontWeight: 600, background: '#b7d941', border: 'none', color: '#0f0f10', cursor: publishLoading ? 'wait' : 'pointer', letterSpacing: '0.03em', opacity: publishLoading ? 0.7 : 1 }}>
+              {publishLoading ? <Loader2 size={13} className="spin" /> : <Send size={13} />} {publishLoading ? 'Publishing...' : 'Publish'}
+            </button>
+            {publishError && <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#ef4444' }}><AlertCircle size={12} />{publishError}</span>}
+          </div>
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <SectionPalette onAdd={handleAddSection} />
             <LivePreview page={page} selectedId={selectedId} onSelect={setSelectedId} />
