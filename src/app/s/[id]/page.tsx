@@ -86,25 +86,16 @@ export default function SitePage(props: { params: Promise<{ id: string }> }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`/api/sites?username=${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.sections?.length) {
-            setPage(data);
-            setLoading(false);
-            return;
-          }
-        }
-        const local = loadFromStorage(id);
-        if (local[id]) setPage(local[id] as PageConfig);
-      } catch (e) {
+    fetch('https://svc-moba0odjul0rjfgy.buildwithlocus.com/api/sites?username=' + id)
+      .then(r => r.json())
+      .then(data => {
+        if (data.sections?.length) setPage(data);
+        setLoading(false);
+      })
+      .catch(e => {
         setError(String(e));
-      }
-      setLoading(false);
-    }
-    load();
+        setLoading(false);
+      });
   }, [id]);
 
   if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading {id}...</div>;
