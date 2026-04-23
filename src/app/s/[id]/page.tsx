@@ -25,21 +25,6 @@ function loadFromStorage(username: string): Record<string, unknown> {
   }
 }
 
-async function fetchFromServer(username: string): Promise<PageConfig | null> {
-  if (typeof window === 'undefined') return null;
-  try {
-    const res = await fetch(`/api/sites?username=${username}`);
-    console.log('[Site] API response status:', res.status);
-    if (!res.ok) return null;
-    const data = await res.json();
-    console.log('[Site] API data:', JSON.stringify(data).slice(0, 200));
-    return data as PageConfig;
-  } catch (err) {
-    console.error('[Site] Fetch error:', err);
-    return null;
-  }
-}
-
 const THEME_STYLES: Record<string, { bg: string; text: string; accent: string; cardBg: string; cardBorder: string; sectionAlt: string }> = {
   modern: { bg: '#ffffff', text: '#111111', accent: '#6366f1', cardBg: '#f8f9fa', cardBorder: '#e5e7eb', sectionAlt: '#f8f9fa' },
   dark: { bg: '#09090b', text: '#ededef', accent: '#6366f1', cardBg: '#111113', cardBorder: '#1e1e22', sectionAlt: '#0c0c0e' },
@@ -262,20 +247,27 @@ export default function PublicSitePage() {
 
   useEffect(() => {
     async function load() {
+      console.log('[Site] Starting load for:', id);
       try {
-        const remote = await fetchFromServer(id);
-        console.log('[Site] Loaded from server:', remote?.title, remote?.sections?.length);
-        if (remote && remote.sections) {
-          setPage(remote);
+        const res = await fetch(`/api/sites?username=${id}`);
+        console.log('[Site] Response status:', res.status);
+        
+        if (!res.ok) {
+          console.log('[Site] Response not ok');
           setLoading(false);
           return;
         }
-        const local = loadFromStorage(id);
-        if (local && local[id]) {
-          setPage(local[id] as PageConfig);
+        
+        const data = await res.json();
+        console.log('[Site] Data received:', Object.keys(data));
+        
+        if (data.sections && data.sections.length > 0) {
+          setPage(data);
+        } else {
+          console.log('[Site] No sections in data');
         }
       } catch (err) {
-        console.error('[Site] Load error:', err);
+        console.error('[Site] Error:', err);
       }
       setLoading(false);
     }
