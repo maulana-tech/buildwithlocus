@@ -79,16 +79,29 @@ function attachSessionIds(page: PageConfig, sessions: Array<{ sectionId: string;
   };
 }
 
+const SITES_FILE = path.join(process.cwd(), 'data/sites.json');
+
+function loadSites(): Record<string, unknown> {
+  try {
+    if (fs.existsSync(SITES_FILE)) {
+      return JSON.parse(fs.readFileSync(SITES_FILE, 'utf-8'));
+    }
+  } catch {}
+  return {};
+}
+
+function saveSitesFile(sites: Record<string, unknown>) {
+  const dir = path.dirname(SITES_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(SITES_FILE, JSON.stringify(sites, null, 2));
+}
+
 async function saveToStorage(username: string, page: PageConfig) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const saveUrl = baseUrl.includes('localhost') ? 'http://localhost:3000' : baseUrl;
-    const res = await fetch(`${saveUrl}/api/sites`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, page }),
-    });
-    return res.ok;
+    const sites = loadSites();
+    sites[username] = { ...page, published_at: new Date().toISOString() };
+    saveSitesFile(sites);
+    return true;
   } catch {
     return false;
   }
