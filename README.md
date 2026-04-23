@@ -1,48 +1,180 @@
-# Locus Checkout Studio
+# Locus Studio
 
-A no-code **section-based website builder** for merchants, powered by **BuildWithLocus** and **PayWithLocus** APIs. Built for the Locus Paygentic Hackathon #2.
+> No-code section-based website builder with integrated USDC checkout — powered by **PayWithLocus** and **BuildWithLocus**.
 
-## What It Does
+Built for the **Locus Paygentic Hackathon #2**.
 
-Merchants build professional landing pages and checkout sites using a **visual section editor** — add Hero, Features, Pricing, Checkout sections and publish instantly. Sites accept real payments via PayWithLocus and are deployed to BuildWithLocus.
+---
 
 ## Live Demo
 
-**Production URL:** https://svc-moba0odjul0rjfgy.buildwithlocus.com
-
-| Route | Description |
+| URL | Description |
 |---|---|
-| `/dashboard` | Section-based page builder |
-| `/analytics` | Revenue + transaction tracking |
-| `/s/[username]` | Published public sites |
+| [Landing Page](https://svc-mobj33czir7850u8.buildwithlocus.com) | Marketing page |
+| [Dashboard](https://svc-mobj33czir7850u8.buildwithlocus.com/dashboard) | Site builder studio |
+| [Analytics](https://svc-mobj33czir7850u8.buildwithlocus.com/analytics) | Revenue & transaction tracking |
+| [Demo Site](https://svc-mobj33czir7850u8.buildwithlocus.com/dashboard?demo=1) | Pre-built coffee shop demo |
 
-## Key Features
+---
 
-- **Section-Based Builder** — 7 section types: Hero, Features, Pricing, Checkout, Testimonials, FAQ, Footer
-- **AI Builder** — Type a description, AI generates sections automatically
-- **Live Preview** — Real-time preview with mobile/desktop toggle + zoom controls (50%-150%)
-- **5 Themes** — modern, dark, retro, glass, neon
-- **Analytics Dashboard** — Track revenue, transactions, and page views
-- **Payment Integration** — Real payments via PayWithLocus (QRIS, Bank Transfer, E-Wallet)
-- **Instant Publish** — Deploy to BuildWithLocus with one click
+## What It Does
 
-## Stack
+Locus Studio lets anyone build a professional checkout-enabled landing page in minutes — no code required. Merchants compose sections (Hero, Features, Checkout, etc.), connect their Locus wallet, and publish. Buyers pay with USDC on Base through an embedded checkout experience.
 
-- **Next.js 16** (App Router) + React 19 + TypeScript (strict)
-- **lucide-react** — Icons
-- **CSS Variables** — Dark theme, no Tailwind
-- **Geist + Geist Mono + Space Grotesk** — Fonts via `next/font`
-- **Docker** — Containerized for BuildWithLocus
+### Key Flow
+
+```
+Build in Studio → Publish → Site goes live on BuildWithLocus
+                              ↓
+                    Buyer clicks "Pay Now"
+                              ↓
+              PayWithLocus checkout modal opens
+              (Locus Wallet / MetaMask / AI Agent)
+                              ↓
+                    USDC payment confirmed on-chain
+                              ↓
+              Webhook → Transaction saved → Analytics updated
+```
+
+---
+
+## Screenshots
+
+### Landing Page
+Dark brutalist design with lime accent (`#b7d941`), sharp corners, no border-radius. Hero, stats ticker, features grid, demo preview, how-it-works steps, and CTA.
+
+### Dashboard + Builder
+Two-tab layout — Dashboard overview (stats, quick actions, sites list) and Builder (3-panel editor).
+
+### Checkout
+Embedded `@withlocus/checkout-react` component renders inline when buyer clicks Pay. Supports Locus Wallet, External Wallet (MetaMask), and AI Agent payments.
+
+### Analytics
+Revenue, transactions, views — per-site breakdown with real data from webhook events.
+
+---
+
+## Features
+
+### Section-Based Builder
+7 section types — compose any combination:
+
+| Section | What It Renders |
+|---|---|
+| **Hero** | Headline + subtext + CTA button |
+| **Features** | Icon grid with titles and descriptions |
+| **Pricing** | Plan cards with feature lists |
+| **Checkout** | PayWithLocus embedded checkout (USDC on Base) |
+| **Testimonials** | Customer review cards |
+| **FAQ** | Question/answer pairs |
+| **Footer** | Brand, links, socials |
+
+### AI Builder
+Type a prompt like *"coffee shop with checkout and testimonials"* → sections auto-generate based on keyword parsing.
+
+### 5 Themes
+`modern` · `dark` · `retro` · `glass` · `neon` — one-click cycle in the builder toolbar.
+
+### Live Preview
+Real-time preview with **mobile/desktop toggle** and **zoom controls** (50%–150%).
+
+### Start with Demo
+One-click demo loads a pre-built "Kopi Nusantara" coffee shop with all section types including a live checkout. Available from landing page, dashboard, and wallet connect modal.
+
+### Wallet Connection
+Connect your Locus wallet via API key (`claw_dev_*`). Shows wallet address, USDC balance, copy address, and BaseScan link in the navbar.
+
+### Smart Auto-Deploy
+First publish creates a BuildWithLocus service. All subsequent publishes **redeploy the same service** — no duplicate services, no wasted credits.
+
+---
+
+## Integrations
+
+### PayWithLocus
+- **Session creation**: `POST /checkout/sessions` with amount, metadata, receipt config
+- **Embedded checkout**: `@withlocus/checkout-react` renders inline payment UI
+- **Webhooks**: `checkout.session.paid` events → HMAC-SHA256 verified → transaction persisted
+- **Wallet**: `GET /pay/balance` for connected wallet display
+
+### BuildWithLocus
+- **First deploy**: `POST /v1/projects/from-repo` → creates project, environment, service
+- **Redeploy**: `POST /v1/deployments` with saved `serviceId` — free, no new service
+- **Env vars**: Set via `PUT /v1/variables/service/:id`
+- **Auto-deploy**: GitHub app triggers redeploy on every `git push` to `main`
+
+---
+
+## Architecture
+
+```
+src/
+├── app/
+│   ├── page.tsx                  Landing page
+│   ├── dashboard/page.tsx        Builder studio (Dashboard + Builder tabs)
+│   ├── analytics/page.tsx        Analytics dashboard
+│   ├── s/[id]/page.tsx           Public site renderer (with @withlocus/checkout-react)
+│   └── api/
+│       ├── publish/route.ts      Publish flow (checkout sessions + BuildWithLocus deploy)
+│       ├── sites/route.ts        Server-side JSON storage
+│       ├── analytics/route.ts    Analytics data API
+│       ├── wallet/route.ts       Wallet balance verification
+│       └── webhooks/locus/       PayWithLocus webhook handler
+├── components/
+│   ├── AppNavbar.tsx             Navigation + wallet connect
+│   ├── builder/
+│   │   ├── SectionPalette.tsx    Left — add sections
+│   │   ├── LivePreview.tsx       Center — live preview
+│   │   └── PropertyPanel.tsx     Right — edit section props
+│   └── PublishModal.tsx          Publish confirmation modal
+├── agents/
+│   ├── state.ts                  Types: PageConfig, SectionTypes, SiteAnalytics
+│   ├── base.ts                   BaseAgent with EventBus
+│   ├── orchestrator.ts           Routes events between agents
+│   ├── builder.ts                Config validation
+│   ├── payment.ts                PayWithLocus API integration
+│   └── analytics.ts              In-memory analytics store
+├── lib/
+│   └── locus.ts                  Typed API client (PayWithLocus + BuildWithLocus)
+└── styles/
+    └── builder.css               Builder component styles
+```
+
+### Design System
+- **Colors**: `#0f0f10` bg, `#1b1b1c` surface, `#2a2a2b` border, `#b7d941` accent
+- **No border-radius** — sharp brutalist aesthetic
+- **Typography**: Geist Sans, Geist Mono, Space Grotesk
+- **Icons**: lucide-react
+
+---
+
+## Tech Stack
+
+| Layer | Tech |
+|---|---|
+| Framework | Next.js 16 (App Router) + React 19 |
+| Language | TypeScript (strict) |
+| Styling | CSS Variables, inline styles — no Tailwind |
+| Icons | lucide-react |
+| Fonts | Geist Sans + Geist Mono + Space Grotesk (`next/font`) |
+| Payments | `@withlocus/checkout-react` |
+| Hosting | BuildWithLocus (containerized via Dockerfile) |
+| Package Manager | pnpm |
+
+---
 
 ## Getting Started
 
 ```bash
 pnpm install
 cp .env.example .env
+# Add your LOCUS_API_KEY to .env
 pnpm dev
 ```
 
 Open http://localhost:3000
+
+---
 
 ## Commands
 
@@ -50,125 +182,33 @@ Open http://localhost:3000
 |---|---|
 | `pnpm dev` | Dev server on :3000 |
 | `pnpm build` | Production build + type checking |
-| `pnpm lint` | ESLint (next/core-web-vitals + typescript) |
-| `pnpm agents:start` | Run agent system standalone |
+| `pnpm lint` | ESLint |
+| `pnpm agents:start` | Run agent system standalone via tsx |
 
-## Architecture
-
-```
-src/
-├── app/
-│   ├── page.tsx              Landing page
-│   ├── dashboard/page.tsx    Section-based builder Studio
-│   ├── analytics/page.tsx    Analytics dashboard
-│   ├── s/[id]/page.tsx       Public site renderer
-│   └── api/
-│       ├── publish/route.ts  Deploy to BuildWithLocus + create payment links
-│       ├── sites/route.ts    Server-side JSON file storage
-│       ├── analytics/route.ts Analytics data API
-│       └── webhooks/locus/  Webhook handler for transactions
-├── components/builder/
-│   ├── SectionPalette.tsx   Left sidebar — add sections
-│   ├── LivePreview.tsx      Center — live preview (mobile/desktop + zoom)
-│   └── PropertyPanel.tsx    Right sidebar — edit section props
-├── agents/
-│   ├── state.ts             Types (PageConfig, SectionTypes, SiteAnalytics)
-│   ├── builder.ts           Config validation
-│   └── payment.ts           PayWithLocus API integration
-└── lib/
-    └── locus.ts             Typed API client
-```
-
-## Section-Based Builder
-
-The Studio has 3 panels:
-
-1. **Section Palette (Left)** — Click to add: Hero, Features, Pricing, Checkout, Testimonials, FAQ, Footer
-2. **Live Preview (Center)** — Real-time preview with **device toggle** (mobile/desktop) + **zoom controls** (50%-150%)
-3. **Property Panel (Right)** — Edit selected section properties
-
-### AI Builder
-
-Type a description in the header input to auto-generate sections:
-
-```
-"landing page for my coffee shop with pricing and contact info"
-```
-
-Parses keywords: hero, features, pricing, checkout, testimonials, faq, footer
-
-### Available Sections
-
-| Section | Description |
-|---|---|
-| Hero | Headline + subtext + CTA button |
-| Features | Grid of feature cards with icons |
-| Pricing | Pricing table with plans |
-| Checkout | Embedded PayWithLocus payment widget |
-| Testimonials | Customer reviews grid |
-| FAQ | Accordion-style Q&A |
-| Footer | Links + socials + brand |
-
-### Themes
-
-5 built-in themes: `modern`, `dark`, `retro`, `glass`, `neon`
-
-## Analytics Dashboard
-
-Track site performance at `/analytics`:
-
-- Total revenue (USDC)
-- Transaction count
-- Page views
-- Per-site breakdown with detail view
-
-## Payment Integration
-
-Checkout sections create real payment links via PayWithLocus API:
-
-- QRIS, Bank Transfer, E-Wallet support
-- Configurable amount + currency
-- Webhook notifications for transaction status
-- Success/cancel redirect URLs
-
-## Deployment Flow
-
-```
-Dashboard → Compose sections → Publish
-  → POST /api/publish
-    → Save to server storage (JSON file)
-    → Create payment links (PayWithLocus)
-    → Deploy to BuildWithLocus (via /v1/projects/from-repo)
-  → Return live URL
-```
-
-The app containerizes with **Dockerfile** for BuildWithLocus and auto-deploys from GitHub.
+---
 
 ## Environment Variables
 
 | Variable | Description | Required |
 |---|---|---|
-| `LOCUS_API_KEY` | PayWithLocus API key | Yes |
-| `LOCUS_WEBHOOK_SECRET` | Webhook HMAC secret | No |
-| `LOCUS_BASE_URL` | Locus API URL (default: `https://api.locus.sh`) | No |
-| `NEXT_PUBLIC_APP_URL` | Production URL | Yes (production) |
-| `NEXT_PUBLIC_DEPLOY_REPO` | GitHub repo for deployment | Yes (production) |
+| `LOCUS_API_KEY` | PayWithLocus + BuildWithLocus API key (`claw_dev_*`) | Yes |
+| `LOCUS_WEBHOOK_SECRET` | Webhook HMAC secret (`whsec_*`) | No |
+| `LOCUS_API_BASE` | PayWithLocus API base (default: `https://api.paywithlocus.com/api`) | No |
+| `NEXT_PUBLIC_APP_URL` | Production URL of the deployed service | Yes (production) |
+| `NEXT_PUBLIC_DEPLOY_REPO` | GitHub repo for BuildWithLocus deployment | Yes (production) |
 
-## BuildWithLocus Integration
+---
 
-The app uses BuildWithLocus for hosting. See [DEPLOYMENT.md](./DEPLOYMENT.md) for:
-- Auto-deploy setup with GitHub app
-- Manual deploy via API
-- Troubleshooting guide
-- API reference
-
-## Hackathon
+## Hackathon Info
 
 | Field | Value |
 |---|---|
-| Event | Locus Paygentic Hackathon #2 |
-| Track | BuildWithLocus |
-| Week | 2 of 4 |
+| Event | [Locus Paygentic Hackathon #2](https://docs.paywithlocus.com/hackathon) |
+| Track | BuildWithLocus + PayWithLocus |
+| APIs Used | PayWithLocus Checkout, BuildWithLocus Deploy |
+| SDKs Used | `@withlocus/checkout-react` |
+
+---
 
 ## License
 
