@@ -10,9 +10,21 @@ Merchants build professional landing pages and checkout sites using a **visual s
 
 **Production URL:** https://svc-mob8yu5idjbw474r.buildwithlocus.com
 
-- **Studio:** `/dashboard` — Section-based page builder
-- **Analytics:** `/analytics` — Revenue + transaction tracking
-- **Preview:** `/s/[username]` — Published public sites
+| Route | Description |
+|---|---|
+| `/dashboard` | Section-based page builder |
+| `/analytics` | Revenue + transaction tracking |
+| `/s/[username]` | Published public sites |
+
+## Key Features
+
+- **Section-Based Builder** — 7 section types: Hero, Features, Pricing, Checkout, Testimonials, FAQ, Footer
+- **AI Builder** — Type a description, AI generates sections automatically
+- **Live Preview** — Real-time preview with mobile/desktop toggle + zoom controls (50%-150%)
+- **5 Themes** — modern, dark, retro, glass, neon
+- **Analytics Dashboard** — Track revenue, transactions, and page views
+- **Payment Integration** — Real payments via PayWithLocus (QRIS, Bank Transfer, E-Wallet)
+- **Instant Publish** — Deploy to BuildWithLocus with one click
 
 ## Stack
 
@@ -52,19 +64,19 @@ src/
 │   ├── s/[id]/page.tsx       Public site renderer
 │   └── api/
 │       ├── publish/route.ts  Deploy to BuildWithLocus + create payment links
-│       ├── sites/route.ts     Server-side JSON file storage
+│       ├── sites/route.ts    Server-side JSON file storage
 │       ├── analytics/route.ts Analytics data API
-│       └── webhooks/locus/    Webhook handler for transactions
+│       └── webhooks/locus/  Webhook handler for transactions
 ├── components/builder/
-│   ├── SectionPalette.tsx    Left sidebar — add sections
-│   ├── LivePreview.tsx       Center — live preview (mobile/desktop + zoom)
-│   └── PropertyPanel.tsx     Right sidebar — edit section props
+│   ├── SectionPalette.tsx   Left sidebar — add sections
+│   ├── LivePreview.tsx      Center — live preview (mobile/desktop + zoom)
+│   └── PropertyPanel.tsx    Right sidebar — edit section props
 ├── agents/
-│   ├── state.ts              Types (PageConfig, SectionTypes, SiteAnalytics)
-│   ├── builder.ts            Config validation
-│   └── payment.ts            PayWithLocus API integration
+│   ├── state.ts             Types (PageConfig, SectionTypes, SiteAnalytics)
+│   ├── builder.ts           Config validation
+│   └── payment.ts           PayWithLocus API integration
 └── lib/
-    └── locus.ts              Typed API client
+    └── locus.ts             Typed API client
 ```
 
 ## Section-Based Builder
@@ -108,7 +120,7 @@ Track site performance at `/analytics`:
 - Total revenue (USDC)
 - Transaction count
 - Page views
-- Per-site breakdown
+- Per-site breakdown with detail view
 
 ## Payment Integration
 
@@ -117,6 +129,7 @@ Checkout sections create real payment links via PayWithLocus API:
 - QRIS, Bank Transfer, E-Wallet support
 - Configurable amount + currency
 - Webhook notifications for transaction status
+- Success/cancel redirect URLs
 
 ## Deployment Flow
 
