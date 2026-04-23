@@ -1,104 +1,136 @@
-const BUILD_BASE_URL = 'https://api.buildwithlocus.com';
-const PAY_BASE_URL = 'https://api.paywithlocus.com/api';
+const PAY_API_BASE = process.env.LOCUS_API_BASE || 'https://api.paywithlocus.com/api';
+const BUILD_API_BASE = 'https://api.buildwithlocus.com';
 
-async function getBuildToken(): Promise<string | null> {
-  const apiKey = process.env.LOCUS_API_KEY;
-  if (!apiKey) return null;
-
-  try {
-    const res = await fetch(`${BUILD_BASE_URL}/v1/auth/exchange`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.token || data.access_token || null;
-  } catch {
-    return null;
-  }
+function payHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.LOCUS_API_KEY}`,
+  };
 }
 
-async function payRequest<T>(path: string, data: Record<string, unknown>): Promise<T> {
-  const url = `${PAY_BASE_URL}${path}`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.LOCUS_API_KEY}`,
-    },
-    body: JSON.stringify(data),
+async function payRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${PAY_API_BASE}${path}`, {
+    method,
+    headers: payHeaders(),
+    body: body ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.message || body.error || `PayWithLocus error: ${res.status}`);
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as Record<string, string>).message || (err as Record<string, string>).error || `PayWithLocus ${res.status}`);
   }
 
-  const json = await res.json();
-  return json.success ? json.data : json;
+  const json = await res.json() as { success?: boolean; data?: unknown };
+  return (json.success && json.data ? json.data : json) as T;
 }
 
-export type LocusSession = {
+export type CheckoutSession = {
   id: string;
-  checkoutUrl: string;
   amount: string;
   currency: string;
   status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
-  expiresAt: string;
   description?: string;
+  expiresAt: string;
+  checkoutUrl?: string;
+  paymentTxHash?: string;
+  payerAddress?: string;
+  paidAt?: string;
+  webhookSecret?: string;
 };
 
-export type LocusBalance = {
+export type WalletBalance = {
+  balance: string;
+  token: string;
   wallet_address: string;
-  chain: string;
-  usdc_balance: string;
+};
+
+export type BuildToken = {
+  token: string;
+  expiresIn: string;
 };
 
 export const locus = {
   payment: {
     async createSession(data: {
       amount: string;
-      currency: string;
       description?: string;
       successUrl?: string;
       cancelUrl?: string;
       webhookUrl?: string;
       metadata?: Record<string, string>;
-    }): Promise<LocusSession> {
-      return payRequest<LocusSession>('/checkout/sessions', data);
+      receiptConfig?: {
+        enabled: boolean;
+        fields: {
+          creditorName?: string;
+          lineItems?: Array<{ description: string; amount: string }>;
+          subtotal?: string;
+          taxRate?: string;
+          taxAmount?: string;
+          logoUrl?: string;
+          companyAddress?: string;
+          supportEmail?: string;
+        };
+      };
+    }): Promise<CheckoutSession> {
+      return payRequest<CheckoutSession>('POST', '/checkout/sessions', data);
     },
 
-    getSession(id: string): Promise<LocusSession> {
-      return payRequest<LocusSession>(`/checkout/session/${id}`, {});
+    async getSession(sessionId: string): Promise<CheckoutSession> {
+      return payRequest<CheckoutSession>('GET', `/checkout/sessions/${sessionId}`);
     },
 
-    getBalance(): Promise<LocusBalance> {
-      return payRequest<LocusBalance>('/pay/balance', {});
+    async getBalance(): Promise<WalletBalance> {
+      return payRequest<WalletBalance>('GET', '/pay/balance');
     },
   },
 
   build: {
-    async listProjects() {
-      const token = await getBuildToken();
-      if (!token) throw new Error('No build token');
-      const res = await fetch(`${BUILD_BASE_URL}/v1/projects`, {
+    async exchangeToken(): Promise<BuildToken | null> {
+      const apiKey = process.env.LOCUS_API_KEY;
+      if (!apiKey) return null;
+
+      try {
+        const res = await fetch(`${BUILD_API_BASE}/v1/auth/exchange`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ apiKey }),
+        });
+        if (!res.ok) return null;
+        return res.json();
+      } catch {
+        return null;
+      }
+    },
+
+    async getBillingBalance(token: string) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/billing/balance`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error(`Build billing ${res.status}`);
       return res.json();
     },
 
-    async createProject(name: string, repo: string) {
-      const token = await getBuildToken();
-      if (!token) throw new Error('No build token');
-      const res = await fetch(`${BUILD_BASE_URL}/v1/projects/from-repo`, {
+    async deployFromRepo(token: string, data: { name: string; repo: string; branch?: string }) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/projects/from-repo`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, repo, branch: 'main' }),
+        body: JSON.stringify({ ...data, branch: data.branch || 'main' }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as Record<string, string>).message || `Build deploy ${res.status}`);
+      }
+      return res.json();
+    },
+
+    async listProjects(token: string) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/projects`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Build list ${res.status}`);
       return res.json();
     },
   },
