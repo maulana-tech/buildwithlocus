@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const SITES_FILE = path.join(__dirname, '../../../../data/sites.json');
+const SITES_FILE = path.join(process.cwd(), 'data/sites.json');
 
 function loadSites(): Record<string, unknown> {
   console.log('[Sites] Loading from:', SITES_FILE);

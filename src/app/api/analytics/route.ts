@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SiteAnalytics, Transaction } from '@/agents/state';
 
-const STORAGE_FILE = './data/sites.json';
+const STORAGE_FILE = path.join(process.cwd(), 'data/sites.json');
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function loadAnalytics(): Record<string, SiteAnalytics> {
+  console.log('[Analytics] Loading from:', STORAGE_FILE);
   try {
-    const file = path.join(__dirname, '../../..', STORAGE_FILE);
-    if (fs.existsSync(file)) {
-      const sites = JSON.parse(fs.readFileSync(file, 'utf-8')) as Record<string, {
+    if (fs.existsSync(STORAGE_FILE)) {
+      const sites = JSON.parse(fs.readFileSync(STORAGE_FILE, 'utf-8')) as Record<string, {
         transactions?: Transaction[];
         published_at?: string;
         views?: number;
