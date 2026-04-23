@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Layers, BarChart3, Plus, ArrowRight, DollarSign, Eye, ShoppingCart, Users, Zap, ExternalLink, TrendingUp, Clock, Send, Sparkles, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Layers, BarChart3, Plus, ArrowRight, DollarSign, Eye, ShoppingCart, Users, Zap, ExternalLink, TrendingUp, Clock, Send, Sparkles, Loader2, Play } from 'lucide-react';
 
 import { AppNavbar } from '@/components/AppNavbar';
 import { SectionPalette } from '@/components/builder/SectionPalette';
@@ -14,6 +15,39 @@ import '@/styles/builder.css';
 const STORAGE_KEY = 'locus_page_builder_v1';
 const SHARED_SITES_KEY = 'locus_shared_sites';
 const DEFAULT_REPO = 'maulana-tech/buildwithlocus';
+
+const DEMO_SITE: PageConfig = {
+  id: 'demo_1',
+  username: 'coffee_shop',
+  title: 'Kopi Nusantara',
+  theme: 'dark',
+  primary_color: '#b7d941',
+  sections: [],
+};
+
+function buildDemoSections(): PageSection[] {
+  const id = uid;
+  return [
+    { id: id(), type: 'hero', headline: 'Kopi Nusantara', subtext: 'Premium Indonesian coffee, delivered to your door. Fresh beans from Toraja, Gayo, and Kintamani.', cta_label: 'Order Now', cta_url: '#', alignment: 'center' },
+    { id: id(), type: 'features', title: 'Why Our Coffee', columns: 3, items: [
+      { id: id(), icon: '☕', title: 'Single Origin', description: 'Sourced directly from farmers in Toraja, Gayo, and Kintamani highlands.' },
+      { id: id(), icon: '🌱', title: 'Organic', description: '100% organic beans, no pesticides, shade-grown naturally.' },
+      { id: id(), icon: '🚀', title: 'Fresh Roasted', description: 'Roasted to order and shipped within 24 hours.' },
+    ] },
+    { id: id(), type: 'checkout', title: 'Order Your Coffee', description: 'Pay securely with crypto via PayWithLocus.', amount: 25, currency: 'USDC', payment_methods: ['Locus Wallet', 'MetaMask', 'AI Agent'], cta_label: 'Pay 25 USDC' },
+    { id: id(), type: 'testimonials', title: 'What Customers Say', items: [
+      { id: id(), name: 'Andi S.', role: 'Coffee Enthusiast', content: 'Best Toraja coffee I have ever had. Fresh and aromatic.' },
+      { id: id(), name: 'Maya R.', role: 'Cafe Owner', content: 'We switched all our beans to Kopi Nusantara. Customers love it.' },
+      { id: id(), name: 'Budi K.', role: 'Digital Nomad', content: 'Finally, great coffee delivered with crypto payment. So easy!' },
+    ] },
+    { id: id(), type: 'faq', title: 'FAQ', items: [
+      { id: id(), question: 'How do I pay?', answer: 'We accept USDC payments via PayWithLocus. Connect your wallet and pay in one click.' },
+      { id: id(), question: 'Where do you ship?', answer: 'Worldwide shipping via DHL. Free shipping for orders above $50.' },
+      { id: id(), question: 'Is the coffee organic?', answer: 'Yes, 100% organic and fair trade certified.' },
+    ] },
+    { id: id(), type: 'footer', brand_name: 'Kopi Nusantara', tagline: 'Built with Locus Studio', links: [{ id: id(), label: 'Privacy', url: '#' }, { id: id(), label: 'Terms', url: '#' }], socials: [] },
+  ];
+}
 
 function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -117,8 +151,24 @@ const s = {
 };
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'builder'>('dashboard');
-  const [page, setPage] = useState<PageConfig>(() => loadPage() ?? DEFAULT_PAGE);
+  return (
+    <Suspense fallback={<div style={{ height: '100vh', background: '#0f0f10', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666668' }}>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'builder'>(() =>
+    searchParams?.get('demo') === '1' ? 'builder' : 'dashboard'
+  );
+  const [page, setPage] = useState<PageConfig>(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1') {
+      return { ...DEMO_SITE, sections: buildDemoSections() };
+    }
+    return loadPage() ?? DEFAULT_PAGE;
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isPublishOpen, setIsPublishOpen] = useState(false);
   const [publishedUrl, setPublishedUrl] = useState('');
@@ -176,6 +226,14 @@ export default function DashboardPage() {
     }
     setIsPublishOpen(true);
   }, [page]);
+
+  const startDemo = useCallback(() => {
+    const demo = { ...DEMO_SITE, sections: buildDemoSections() };
+    setPage(demo);
+    savePage(demo);
+    setSelectedId(demo.sections[0]?.id || null);
+    setActiveTab('builder');
+  }, []);
 
   const cycleTheme = useCallback(() => {
     const themes: PageConfig['theme'][] = ['modern', 'dark', 'retro', 'glass', 'neon'];
@@ -239,13 +297,13 @@ export default function DashboardPage() {
                 </div>
                 <ArrowRight size={16} />
               </button>
-              <a href="/analytics" style={{ padding: '20px', background: '#1b1b1c', color: '#fdfdfd', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}>
+              <button onClick={startDemo} style={{ padding: '20px', background: '#1b1b1c', color: '#fdfdfd', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: 'none', cursor: 'pointer', textAlign: 'left' as const, width: '100%' }}>
                 <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, letterSpacing: '-0.005em' }}><BarChart3 size={16} /> Analytics</div>
-                  <p style={{ fontSize: '11px', color: '#666668', lineHeight: 1.5 }}>Detailed metrics and history</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', fontSize: '13px', fontWeight: 600, letterSpacing: '-0.005em' }}><Play size={16} /> Try Demo</div>
+                  <p style={{ fontSize: '11px', color: '#666668', lineHeight: 1.5 }}>Start with a pre-built coffee shop</p>
                 </div>
                 <ArrowRight size={16} color="#666668" />
-              </a>
+              </button>
             </div>
 
             <div>
@@ -253,8 +311,11 @@ export default function DashboardPage() {
               {sites.length === 0 ? (
                 <div style={s.emptyState}>
                   <Layers size={32} style={{ color: '#2a2a2b', marginBottom: '12px' }} />
-                  <p style={{ color: '#666668', marginBottom: '16px', fontSize: '13px' }}>No published sites yet</p>
-                  <button onClick={() => setActiveTab('builder')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#b7d941', color: '#0f0f10', padding: '10px 20px', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}><Plus size={14} /> Create Site</button>
+                  <p style={{ color: '#666668', marginBottom: '20px', fontSize: '13px' }}>No published sites yet</p>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <button onClick={startDemo} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#b7d941', color: '#0f0f10', padding: '10px 20px', border: 'none', fontSize: '11px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}><Play size={14} /> Start with Demo</button>
+                    <button onClick={() => setActiveTab('builder')} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'transparent', color: '#a0a0a2', padding: '10px 20px', border: '1px solid #2a2a2b', fontSize: '11px', fontWeight: 600, cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase' as const }}><Plus size={14} /> Create Site</button>
+                  </div>
                 </div>
               ) : (
                 <div style={s.sitesList}>
