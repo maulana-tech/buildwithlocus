@@ -156,20 +156,98 @@ The app containerizes with **Dockerfile** for BuildWithLocus and auto-deploys fr
 
 ## BuildWithLocus Integration
 
-The app uses BuildWithLocus for hosting:
+The app uses BuildWithLocus for hosting.
 
-1. **Project creation:** `POST /v1/projects/from-repo` 
-2. **Auth:** `POST /v1/auth/exchange` with API key
-3. **Redeploy:** Service auto-redeploys on each publish
-4. **Container:** Next.js app in Docker (port 3000)
+### Auto-Deploy Setup
 
-## Deployment
+1. **Install GitHub App:**
+   - Go to: https://github.com/apps/build-with-locus/installations/new
+   - Select your repository (`maulana-tech/buildwithlocus`)
+   - Authorize the app
 
-The app is configured for BuildWithLocus via:
+2. **After installation:**
+   - Every `git push` to `main` branch will auto-deploy
+   - No manual trigger needed
 
-- **`.locusbuild`** — Service config (port 3000)
-- **Dockerfile** — Multi-stage Next.js build
-- **deploy flow:** GitHub push → BuildWithLocus auto-deploy
+### Manual Deploy (via API)
+
+```bash
+# Get token
+TOKEN=$(curl -s -X POST 'https://api.buildwithlocus.com/v1/auth/exchange' \
+  -H 'Content-Type: application/json' \
+  -d '{"apiKey":"YOUR_API_KEY"}' | jq -r '.token')
+
+# Trigger deploy
+curl -X POST "https://api.buildwithlocus.com/v1/git/push-deploy" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "projectId": "YOUR_PROJECT_ID",
+    "repo": "maulana-tech/buildwithlocus",
+    "branch": "main"
+  }'
+```
+
+### Deployment Flow
+
+1. **GitHub push** → BuildWithLocus detects changes → auto-deploys
+2. **Or manual** via API → triggers deployment
+3. Service health check → becomes live at `*.buildwithlocus.com`
+
+## Troubleshooting
+
+### Credits Issue
+If you get `Insufficient credits` error:
+- Check your credits at: https://buildwithlocus.com/billing
+- Minimum $0.25 required per service
+
+### Project ID Reference
+- Current project: `proj_mo8f7ev9dt8uioau` (first created)
+- Service URL: `https://svc-mo8f7ext1aijm8nv.buildwithlocus.com`
+
+### Check Deployment Status
+```bash
+TOKEN=$(curl -s -X POST 'https://api.buildwithlocus.com/v1/auth/exchange' \
+  -H 'Content-Type: application/json' \
+  -d '{"apiKey":"YOUR_API_KEY"}' | jq -r '.token')
+
+# List projects
+curl -s "https://api.buildwithlocus.com/v1/projects" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## .locusbuild Configuration
+
+```json
+{
+  "region": "us-east-1",
+  "services": {
+    "studio": {
+      "path": ".",
+      "port": 3000,
+      "startCommand": "pnpm start",
+      "runtime": {
+        "cpu": 512,
+        "memory": 1024
+      },
+      "env": {
+        "LOCUS_API_KEY": "${{LOCUS_API_KEY}}",
+        "LOCUS_WEBHOOK_SECRET": "${{LOCUS_WEBHOOK_SECRET}}",
+        "NEXT_PUBLIC_APP_URL": "${{NEXT_PUBLIC_APP_URL}}"
+      }
+    }
+  }
+}
+```
+
+## Active Services
+
+| Project Name | Project ID | Service URL |
+|---|---|---|
+| buildwithlocus | proj_mo8f7ev9dt8uioau | svc-mo8f7ext1aijm8nv.buildwithlocus.com |
+| buildwithlocus-v2 | proj_moba0ob46ry54zwb | svc-moba0odjul0rjfgy.buildwithlocus.com |
+
+## Hackathon
 
 ### Manual Deploy
 
