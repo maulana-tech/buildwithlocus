@@ -1,7 +1,1 @@
-{
-  "testuser": {
-    "title": "Test",
-    "sections": [],
-    "published_at": "2026-04-23T08:43:33.679Z"
-  }
-}
+{"my_store":{"title":"My Store","username":"my_store","theme":"modern","sections":[{"id":"h1","type":"hero","headline":"Welcome to My Store","subtext":"The best products","cta_label":"Shop Now","alignment":"center"}]}}

@@ -250,29 +250,17 @@ useEffect(() => {
     async function load() {
       console.log('[Site] Starting load for:', id);
       try {
-        // Use full URL
-        const baseUrl = 'https://svc-moba0odjul0rjfgy.buildwithlocus.com';
-        const res = await fetch(`${baseUrl}/api/sites?username=${id}`);
+        // Use relative URL - works for both local and production
+        const res = await fetch(`/api/sites?username=${id}`);
         console.log('[Site] Response status:', res.status);
         
         if (res.ok) {
           const data = await res.json();
-          console.log('[Site] Data sections:', data.sections?.length);
-          
-          if (data.sections && data.sections.length > 0) {
-            console.log('[Site] Setting page');
+          console.log('[Site] Data:', JSON.stringify(data).slice(0, 100));
+          if (data.sections?.length) {
             setPage(data);
-            setLoading(false);
-            return;
+            console.log('[Site] Set page');
           }
-        }
-        
-        const local = loadFromStorage(id);
-        console.log('[Site] Local:', local[id] ? 'found' : 'not found');
-        if (local && local[id]) {
-          setPage(local[id] as PageConfig);
-          setLoading(false);
-          return;
         }
       } catch (err) {
         console.error('[Site] Error:', err);
@@ -284,26 +272,20 @@ useEffect(() => {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0c', color: '#f8f9fa' }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ width: '24px', height: '24px', border: '2px solid #333', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
-          <p style={{ opacity: 0.6, fontSize: '14px' }}>Loading...</p>
-        </div>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0c', color: '#fff' }}>
+        <p>Loading...</p>
       </div>
     );
   }
 
   if (!page) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0a0a0c', color: '#f8f9fa' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: '8px' }}>404</h1>
-          <p style={{ opacity: 0.6 }}>Site not found</p>
-          <Link href="/" style={{ display: 'inline-block', marginTop: '20px', color: '#6366f1', textDecoration: 'underline' }}>Back to Studio</Link>
-        </div>
+      <div style={{ minHeight: '100vh', background: '#0a0a0f', color: '#fff', padding: '40px' }}>
+        <h1>404 - No page for {id}</h1>
+        <p>No page data</p>
       </div>
-    );
-  }
+);
+}
 
   return (
     <div style={{ minHeight: '100vh', background: THEME_STYLES[page.theme]?.bg || '#fff' }}>
@@ -320,5 +302,7 @@ useEffect(() => {
         </React.Fragment>
       ))}
     </div>
-  );
+);
 }
+
+export default SitePage;
