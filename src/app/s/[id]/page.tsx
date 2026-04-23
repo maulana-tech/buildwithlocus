@@ -28,7 +28,7 @@ function loadFromStorage(username: string): Record<string, unknown> {
 async function fetchFromServer(username: string): Promise<PageConfig | null> {
   if (typeof window === 'undefined') return null;
   try {
-    const res = await fetch(`${APP_URL}/api/sites?username=${username}`);
+    const res = await fetch(`/api/sites?username=${username}`);
     if (!res.ok) return null;
     const data = await res.json();
     return data as PageConfig;
