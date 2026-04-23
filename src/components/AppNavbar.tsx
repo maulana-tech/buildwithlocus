@@ -280,20 +280,28 @@ export function AppNavbar() {
                 Get your API key from <a href="https://app.paywithlocus.com" target="_blank" rel="noopener" style={{ color: '#b7d941', textDecoration: 'none' }}>app.paywithlocus.com</a>
               </p>
             </div>
-            <div style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2b', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button
-                onClick={() => setShowConnect(false)}
-                style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '12px', cursor: 'pointer' }}
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #2a2a2b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <a
+                href="/dashboard?demo=1"
+                style={{ fontSize: '11px', color: '#666668', textDecoration: 'none', letterSpacing: '0.03em' }}
               >
-                Cancel
-              </button>
-              <button
-                onClick={connectWallet}
-                disabled={wallet.loading || !apiKey.trim()}
-                style={{ padding: '8px 16px', background: '#b7d941', border: 'none', color: '#0f0f10', fontSize: '12px', fontWeight: 600, cursor: wallet.loading ? 'wait' : 'pointer', letterSpacing: '0.03em' }}
-              >
-                {wallet.loading ? 'Connecting...' : 'Connect'}
-              </button>
+                Skip &rarr; Try Demo
+              </a>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => setShowConnect(false)}
+                  style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '12px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={connectWallet}
+                  disabled={wallet.loading || !apiKey.trim()}
+                  style={{ padding: '8px 16px', background: '#b7d941', border: 'none', color: '#0f0f10', fontSize: '12px', fontWeight: 600, cursor: wallet.loading ? 'wait' : 'pointer', letterSpacing: '0.03em' }}
+                >
+                  {wallet.loading ? 'Connecting...' : 'Connect'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
