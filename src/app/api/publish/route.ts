@@ -190,7 +190,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      url: deployResult.url || localUrl,
+      url: localUrl,
       deployedVia: deployResult.deployed ? 'buildwithlocus' : 'local',
       projectId: deployResult.projectId,
       redeployed: deployResult.redeployed,
