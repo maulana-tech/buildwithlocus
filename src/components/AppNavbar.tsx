@@ -18,7 +18,12 @@ type WalletState = {
   loading: boolean;
 };
 
-export function AppNavbar() {
+type Props = {
+  activeTab?: 'dashboard' | 'builder';
+  onTabChange?: (tab: 'dashboard' | 'builder') => void;
+};
+
+export function AppNavbar({ activeTab, onTabChange }: Props) {
   const pathname = usePathname();
   const [wallet, setWallet] = useState<WalletState>(() => {
     if (typeof window === 'undefined') return { connected: false, address: '', balance: '', loading: false };
