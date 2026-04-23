@@ -117,15 +117,8 @@ async function handleBuildDeploy(repo: string) {
   const existing = loadDeployState();
 
   if (existing?.serviceId) {
-    console.log(`[Publish] Existing service found: ${existing.serviceId}. Triggering redeploy...`);
-    try {
-      const deployment = await locus.build.triggerDeployment(token.token, existing.serviceId);
-      console.log(`[Publish] Redeployment triggered: ${deployment.id}`);
-      return { deployed: true, url: existing.serviceUrl, projectId: existing.projectId, redeployed: true };
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[Publish] Redeploy failed, will try fresh:`, msg);
-    }
+    console.log(`[Publish] Existing service found: ${existing.serviceId}. Skipping redeploy.`);
+    return { deployed: true, url: existing.serviceUrl, projectId: existing.projectId, redeployed: false };
   }
 
   try {
