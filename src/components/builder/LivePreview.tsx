@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Sparkles,
   LayoutGrid,
@@ -12,6 +12,10 @@ import {
   Star,
   ChevronDown,
   ExternalLink,
+  Monitor,
+  Smartphone,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import type { PageSection, PageConfig } from '@/agents/state';
 
@@ -188,34 +192,99 @@ type Props = {
 };
 
 export function LivePreview({ page, selectedId, onSelect }: Props) {
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const [zoom, setZoom] = useState(100);
+
+  const viewportWidth = device === 'mobile' ? 375 : 900;
+  const containerPadding = 24;
+  const viewportPadding = device === 'mobile' ? 12 : 32;
+
   return (
     <div className="builder-preview">
-      <div className="builder-preview-viewport">
-        {page.sections.length === 0 && (
-          <div className="builder-preview-empty">
-            <p>No sections yet.</p>
-            <p style={{ fontSize: '12px', opacity: 0.5, marginTop: '4px' }}>Add sections from the left panel.</p>
-          </div>
-        )}
-        {page.sections.map((section) => (
-          <div
-            key={section.id}
-            className={`builder-preview-section ${selectedId === section.id ? 'selected' : ''}`}
-            onClick={() => onSelect(section.id)}
+      <div className="builder-preview-toolbar">
+        <div style={{ display: 'flex', gap: '2px', background: '#1a1a1e', padding: '2px', borderRadius: '4px' }}>
+          <button
+            onClick={() => setDevice('desktop')}
+            className={`builder-preview-toolbar-btn ${device === 'desktop' ? 'active' : ''}`}
+            title="Desktop"
           >
-            <div className="builder-preview-section-badge">
-              {SECTION_ICONS[section.type]}
-              <span>{section.type}</span>
+            <Monitor size={14} />
+          </button>
+          <button
+            onClick={() => setDevice('mobile')}
+            className={`builder-preview-toolbar-btn ${device === 'mobile' ? 'active' : ''}`}
+            title="Mobile"
+          >
+            <Smartphone size={14} />
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: '#1a1a1e', padding: '2px', borderRadius: '4px' }}>
+          <button
+            onClick={() => setZoom(Math.max(50, zoom - 10))}
+            disabled={zoom <= 50}
+            className="builder-preview-toolbar-btn"
+            title="Zoom Out"
+          >
+            <ZoomOut size={14} />
+          </button>
+          <span style={{ fontSize: '10px', width: '36px', textAlign: 'center', color: '#71717a' }}>{zoom}%</span>
+          <button
+            onClick={() => setZoom(Math.min(150, zoom + 10))}
+            disabled={zoom >= 150}
+            className="builder-preview-toolbar-btn"
+            title="Zoom In"
+          >
+            <ZoomIn size={14} />
+          </button>
+        </div>
+      </div>
+
+      <div
+        className="builder-preview-viewport"
+        style={{
+          padding: containerPadding,
+          justifyContent: 'center',
+          alignItems: 'flex-start',
+          overflow: 'auto',
+        }}
+      >
+        <div
+          className="builder-preview-scroll"
+          style={{
+            width: `${viewportWidth}px`,
+            transform: `scale(${zoom / 100})`,
+            transformOrigin: 'top center',
+            transition: 'width 0.2s ease',
+          }}
+        >
+          {page.sections.length === 0 && (
+            <div className="builder-preview-empty" style={{ padding: viewportPadding }}>
+              <p>No sections yet.</p>
+              <p style={{ fontSize: '12px', opacity: 0.5, marginTop: '4px' }}>Add sections from the left panel.</p>
             </div>
-            {section.type === 'hero' && <HeroPreview section={section} theme={page.theme} />}
-            {section.type === 'features' && <FeaturesPreview section={section} theme={page.theme} />}
-            {section.type === 'pricing' && <PricingPreview section={section} theme={page.theme} />}
-            {section.type === 'checkout' && <CheckoutPreview section={section} theme={page.theme} />}
-            {section.type === 'testimonials' && <TestimonialsPreview section={section} theme={page.theme} />}
-            {section.type === 'faq' && <FaqPreview section={section} theme={page.theme} />}
-            {section.type === 'footer' && <FooterPreview section={section} theme={page.theme} />}
-          </div>
-        ))}
+          )}
+          {page.sections.map((section) => (
+            <div
+              key={section.id}
+              className={`builder-preview-section ${selectedId === section.id ? 'selected' : ''}`}
+              onClick={() => onSelect(section.id)}
+              style={{ padding: viewportPadding }}
+            >
+              <div className="builder-preview-section-badge">
+                {SECTION_ICONS[section.type]}
+                <span>{section.type}</span>
+              </div>
+              {section.type === 'hero' && <HeroPreview section={section} theme={page.theme} />}
+              {section.type === 'features' && <FeaturesPreview section={section} theme={page.theme} />}
+              {section.type === 'pricing' && <PricingPreview section={section} theme={page.theme} />}
+              {section.type === 'checkout' && <CheckoutPreview section={section} theme={page.theme} />}
+              {section.type === 'testimonials' && <TestimonialsPreview section={section} theme={page.theme} />}
+              {section.type === 'faq' && <FaqPreview section={section} theme={page.theme} />}
+              {section.type === 'footer' && <FooterPreview section={section} theme={page.theme} />}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
