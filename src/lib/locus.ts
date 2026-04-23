@@ -126,11 +126,51 @@ export const locus = {
       return res.json();
     },
 
+    async triggerDeployment(token: string, serviceId: string) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/deployments`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ serviceId }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as Record<string, string>).message || `Trigger deploy ${res.status}`);
+      }
+      return res.json();
+    },
+
+    async getDeployment(token: string, deploymentId: string) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/deployments/${deploymentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Get deployment ${res.status}`);
+      return res.json();
+    },
+
     async listProjects(token: string) {
       const res = await fetch(`${BUILD_API_BASE}/v1/projects`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Build list ${res.status}`);
+      return res.json();
+    },
+
+    async getProject(token: string, projectId: string) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/projects/${projectId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Get project ${res.status}`);
+      return res.json();
+    },
+
+    async getService(token: string, serviceId: string) {
+      const res = await fetch(`${BUILD_API_BASE}/v1/services/${serviceId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(`Get service ${res.status}`);
       return res.json();
     },
   },
