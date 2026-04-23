@@ -134,8 +134,9 @@ function PricingSection({ section, theme }: { section: Extract<PageSection, { ty
   );
 }
 
-function CheckoutSectionPublic({ section, theme }: { section: Extract<PageSection, { type: 'checkout' }>; theme: string }) {
+function CheckoutSectionPublic({ section, theme, checkoutUrl }: { section: Extract<PageSection, { type: 'checkout' }>; theme: string; checkoutUrl?: string }) {
   const s = THEME_STYLES[theme] || THEME_STYLES.modern;
+  const payUrl = checkoutUrl || `https://checkout.paywithlocus.com`;
   return (
     <section style={{ padding: '64px 32px', background: s.sectionAlt, color: s.text }}>
       <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'center' }}>
@@ -159,13 +160,13 @@ function CheckoutSectionPublic({ section, theme }: { section: Extract<PageSectio
               <span key={m} style={{ fontSize: '11px', padding: '4px 10px', background: s.bg, borderRadius: '4px', border: `1px solid ${s.cardBorder}` }}>{m}</span>
             ))}
           </div>
-          <button style={{
+          <a href={payUrl} target="_blank" rel="noopener noreferrer" style={{
             width: '100%', padding: '14px', fontSize: '16px', fontWeight: 700,
             background: s.accent, color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', textDecoration: 'none',
           }}>
             {section.cta_label} <ArrowRight size={16} />
-          </button>
+          </a>
         </div>
       </div>
     </section>
