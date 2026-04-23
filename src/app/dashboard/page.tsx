@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Send, Eye, Palette, Sparkles, Loader2 } from 'lucide-react';
 
+import { AppNavbar } from '@/components/AppNavbar';
 import { SectionPalette } from '@/components/builder/SectionPalette';
 import { LivePreview } from '@/components/builder/LivePreview';
 import { PropertyPanel } from '@/components/builder/PropertyPanel';
@@ -222,10 +223,12 @@ export default function BuilderPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: '#09090b', color: '#ededef' }}>
+      <AppNavbar />
+
       <header style={{
-        height: '48px',
+        height: '44px',
         borderBottom: '1px solid #1e1e22',
-        background: '#111113',
+        background: '#0c0c0e',
         display: 'flex',
         alignItems: 'center',
         padding: '0 16px',
@@ -233,26 +236,19 @@ export default function BuilderPage() {
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <img src="/logo.png" alt="" style={{ width: '20px', height: '20px' }} />
-          <span style={{ fontWeight: 600, fontSize: '13px' }}>Locus Studio</span>
-        </div>
-
-        <div style={{ width: '1px', height: '20px', background: '#1e1e22' }} />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <input
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAiGenerate()}
-            placeholder="Describe your page..."
+            placeholder="AI: Describe your page..."
             style={{
-              background: '#09090b',
-              border: '1px solid #1e1e22',
-              borderRadius: '3px',
-              padding: '4px 10px',
+              background: '#151517',
+              border: '1px solid #27272a',
+              borderRadius: '4px',
+              padding: '5px 12px',
               color: '#ededef',
               fontSize: '12px',
-              width: '200px',
+              width: '220px',
               outline: 'none',
               fontFamily: 'inherit',
             }}
@@ -264,12 +260,12 @@ export default function BuilderPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              padding: '4px 8px',
+              padding: '5px 10px',
               fontSize: '11px',
               fontWeight: 600,
               background: '#6366f1',
               border: 'none',
-              borderRadius: '3px',
+              borderRadius: '4px',
               color: '#fff',
               cursor: isAiLoading ? 'wait' : 'pointer',
               opacity: isAiLoading ? 0.6 : 1,
@@ -277,20 +273,22 @@ export default function BuilderPage() {
             }}
           >
             {isAiLoading ? <Loader2 size={12} className="spin" /> : <Sparkles size={12} />}
-            AI
+            Generate
           </button>
         </div>
 
+        <div style={{ width: '1px', height: '20px', background: '#1e1e22' }} />
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontSize: '11px', color: '#55555e' }}>locus.sh/s/</span>
+          <span style={{ fontSize: '11px', color: '#52525b' }}>locus.sh/s/</span>
           <input
             value={page.username}
             onChange={(e) => handlePageChange({ ...page, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
             style={{
-              background: '#09090b',
-              border: '1px solid #1e1e22',
-              borderRadius: '3px',
-              padding: '4px 8px',
+              background: '#151517',
+              border: '1px solid #27272a',
+              borderRadius: '4px',
+              padding: '5px 10px',
               color: '#ededef',
               fontSize: '12px',
               width: '120px',
@@ -303,7 +301,8 @@ export default function BuilderPage() {
         <div style={{ flex: 1 }} />
 
         <button onClick={cycleTheme} className="builder-props-action" title={`Theme: ${page.theme}`}>
-          <Palette size={13} />
+          <Palette size={14} />
+          <span style={{ fontSize: '10px', marginLeft: '4px', textTransform: 'capitalize' }}>{page.theme}</span>
         </button>
 
         <button
@@ -312,18 +311,18 @@ export default function BuilderPage() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '5px 10px',
+            padding: '6px 12px',
             fontSize: '12px',
             fontWeight: 500,
             background: 'transparent',
-            border: '1px solid #1e1e22',
-            borderRadius: '4px',
-            color: '#8b8b94',
+            border: '1px solid #27272a',
+            borderRadius: '5px',
+            color: '#a1a1aa',
             cursor: 'pointer',
             fontFamily: 'inherit',
           }}
         >
-          <Eye size={13} />
+          <Eye size={14} />
           Preview
         </button>
 

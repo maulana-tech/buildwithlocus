@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BarChart3, TrendingUp, DollarSign, Eye, ArrowRight, ShoppingCart, Users, Settings, Home } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Eye, ArrowRight, ShoppingCart, Users } from 'lucide-react';
+import { AppNavbar } from '@/components/AppNavbar';
 
 type SiteAnalytics = {
   username: string;
@@ -64,23 +65,14 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090b', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#09090b', color: '#fff', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
       
-      <header style={{ height: '48px', borderBottom: '1px solid #1e1e22', background: '#111113', display: 'flex', alignItems: 'center', padding: '0 20px', gap: '16px' }}>
-        <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#8b8b94', textDecoration: 'none', fontSize: '13px' }}>
-          <Home size={14} /> Studio
-        </Link>
-        <Link href="/analytics" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#6366f1', textDecoration: 'none', fontSize: '13px', fontWeight: 600 }}>
-          <BarChart3 size={14} /> Analytics
-        </Link>
-        <div style={{ flex: 1 }} />
-        <span style={{ fontSize: '11px', color: '#555' }}>Locus Studio</span>
-      </header>
+      <AppNavbar />
 
-      <main style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
+      <main style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>Analytics</h1>
         <p style={{ color: '#71717a', fontSize: '14px', marginBottom: '32px' }}>Track your site performance and revenue</p>
 
