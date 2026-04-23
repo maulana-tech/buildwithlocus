@@ -146,12 +146,9 @@ function SiteRow({ site }: { site: SiteAnalytics }) {
       </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
-        <a href={`/s/${site.username}`} target="_blank" rel="noopener" style={{ padding: '8px 12px', background: 'transparent', border: '1px solid #2a2a2b', color: '#a0a0a2', fontSize: '11px', textDecoration: 'none', fontWeight: 500 }}>
-          View
+        <a href={`/s/${site.username}`} target="_blank" rel="noopener" style={{ padding: '8px 12px', background: '#b7d941', border: 'none', color: '#0f0f10', fontSize: '11px', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.03em' }}>
+          View Site
         </a>
-        <Link href={`/analytics/${site.username}`} style={{ padding: '8px 12px', background: '#b7d941', border: 'none', color: '#0f0f10', fontSize: '11px', textDecoration: 'none', fontWeight: 600, letterSpacing: '0.03em' }}>
-          Details
-        </Link>
       </div>
     </div>
   );
