@@ -259,15 +259,20 @@ export default function PublicSitePage() {
 
   useEffect(() => {
     async function load() {
-      const remote = await fetchFromServer(id);
-      if (remote) {
-        setPage(remote);
-        setLoading(false);
-        return;
-      }
-      const local = loadFromStorage(id);
-      if (local && local[id]) {
-        setPage(local[id] as PageConfig);
+      try {
+        const remote = await fetchFromServer(id);
+        console.log('[Site] Loaded from server:', remote?.title, remote?.sections?.length);
+        if (remote && remote.sections) {
+          setPage(remote);
+          setLoading(false);
+          return;
+        }
+        const local = loadFromStorage(id);
+        if (local && local[id]) {
+          setPage(local[id] as PageConfig);
+        }
+      } catch (err) {
+        console.error('[Site] Load error:', err);
       }
       setLoading(false);
     }

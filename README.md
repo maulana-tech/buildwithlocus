@@ -8,7 +8,7 @@ Merchants build professional landing pages and checkout sites using a **visual s
 
 ## Live Demo
 
-**Production URL:** https://svc-mob8yu5idjbw474r.buildwithlocus.com
+**Production URL:** https://svc-moba0odjul0rjfgy.buildwithlocus.com
 
 | Route | Description |
 |---|---|
