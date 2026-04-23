@@ -2,24 +2,58 @@ import { NextRequest, NextResponse } from 'next/server';
 import { locus } from '@/lib/locus';
 import type { PageConfig, PageSection } from '@/agents/state';
 
-const BUILD_BASE_URL = 'https://api.buildwithlocus.com';
+function extractCheckoutSections(sections: PageSection[]) {
+  return sections.filter((s): s is Extract<PageSection, { type: 'checkout' }> => s.type === 'checkout');
+}
 
-async function getBuildToken(): Promise<string | null> {
-  const apiKey = process.env.LOCUS_API_KEY;
-  if (!apiKey) return null;
+async function createCheckoutSessions(page: PageConfig) {
+  const sections = extractCheckoutSections(page.sections);
+  if (sections.length === 0 || !process.env.LOCUS_API_KEY) return [];
 
-  try {
-    const res = await fetch(`${BUILD_BASE_URL}/v1/auth/exchange`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiKey }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.token || data.access_token || null;
-  } catch {
-    return null;
+  const sessions: Array<{ sectionId: string; sessionId: string }> = [];
+
+  for (const section of sections) {
+    try {
+      const session = await locus.payment.createSession({
+        amount: String(section.amount),
+        description: section.title || 'Payment',
+        successUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/success`,
+        cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/cancelled`,
+        webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/locus`,
+        metadata: { section_id: section.id, source: 'locus-studio', username: page.username },
+        receiptConfig: {
+          enabled: true,
+          fields: {
+            creditorName: page.title,
+            lineItems: [{ description: section.title || 'Payment', amount: String(section.amount) }],
+          },
+        },
+      });
+      sessions.push({ sectionId: section.id, sessionId: session.id });
+      console.log(`[Publish] Checkout session created: ${session.id} for section ${section.id}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[Publish] Session creation failed for ${section.id}:`, msg);
+    }
   }
+
+  return sessions;
+}
+
+function attachSessionIds(page: PageConfig, sessions: Array<{ sectionId: string; sessionId: string }>): PageConfig {
+  if (sessions.length === 0) return page;
+
+  const sessionMap = Object.fromEntries(sessions.map(s => [s.sectionId, s.sessionId]));
+
+  return {
+    ...page,
+    sections: page.sections.map(section => {
+      if (section.type !== 'checkout') return section;
+      const sessionId = sessionMap[section.id];
+      if (!sessionId) return section;
+      return { ...section, checkoutSessionId: sessionId };
+    }),
+  };
 }
 
 async function saveToStorage(username: string, page: PageConfig) {
@@ -33,41 +67,41 @@ async function saveToStorage(username: string, page: PageConfig) {
     });
     return res.ok;
   } catch {
-    return true;
+    return false;
   }
 }
 
-function extractCheckoutSections(sections: PageSection[]) {
-  return sections.filter((s): s is Extract<PageSection, { type: 'checkout' }> => s.type === 'checkout');
-}
+async function deployToBuildWithLocus(page: PageConfig, repo: string) {
+  const token = await locus.build.exchangeToken();
+  if (!token?.token) {
+    console.log('[Publish] No BuildWithLocus token, skipping deploy');
+    return { deployed: false, url: null, projectId: null };
+  }
 
-async function createCheckoutSessions(sections: Extract<PageSection, { type: 'checkout' }>[]) {
-  const sessions: Array<{ sectionId: string; id: string; url: string; amount: string }> = [];
+  try {
+    const billing = await locus.build.getBillingBalance(token.token);
+    const creditBalance = parseFloat(billing.creditBalance || billing.credit_balance || '0');
+    console.log(`[Publish] BuildWithLocus credits: $${creditBalance}`);
 
-  for (const section of sections) {
-    try {
-      const session = await locus.payment.createSession({
-        amount: String(section.amount),
-        currency: section.currency === 'IDR' ? 'USDC' : section.currency,
-        description: section.title || 'Payment',
-        successUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/success`,
-        cancelUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payment/cancelled`,
-        webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/webhooks/locus`,
-        metadata: { section_id: section.id, source: 'locus-studio' },
-      });
-      sessions.push({
-        sectionId: section.id,
-        id: session.id,
-        url: session.checkoutUrl,
-        amount: session.amount,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn('[Publish] Session creation failed:', msg);
+    if (creditBalance < 0.25) {
+      console.warn('[Publish] Insufficient credits for BuildWithLocus deployment');
+      return { deployed: false, url: null, projectId: null, reason: 'insufficient_credits' };
     }
+  } catch (err: unknown) {
+    console.warn('[Publish] Billing check failed:', err instanceof Error ? err.message : String(err));
   }
 
-  return sessions;
+  try {
+    const data = await locus.build.deployFromRepo(token.token, { name: page.username, repo });
+    const deployUrl = data.project?.url || data.services?.[0]?.url || null;
+    const projectId = data.project?.id || null;
+    console.log(`[Publish] BuildWithLocus deployed: ${deployUrl}`);
+    return { deployed: true, url: deployUrl, projectId };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[Publish] BuildWithLocus deploy failed:', msg);
+    return { deployed: false, url: null, projectId: null, reason: msg };
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -80,56 +114,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'username is required' }, { status: 400 });
     }
 
-    const checkoutSections = extractCheckoutSections(page.sections);
-    const sessions = await createCheckoutSessions(checkoutSections);
+    const sessions = await createCheckoutSessions(page);
+    const enrichedPage = attachSessionIds(page, sessions);
 
-    const saved = await saveToStorage(page.username, page);
+    const saved = await saveToStorage(page.username, enrichedPage);
 
-    let deployUrl: string | null = null;
-    let deployedVia = 'local';
-    let projectId: string | null = null;
-
-    const token = await getBuildToken();
-    if (token && repo) {
-      try {
-        const res = await fetch(`${BUILD_BASE_URL}/v1/projects/from-repo`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name: page.username, repo, branch: 'main' }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          deployUrl = data.project?.url || data.services?.[0]?.url || null;
-          projectId = data.project?.id || null;
-          deployedVia = 'buildwithlocus';
-        }
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.warn('[Publish] BuildWithLocus deploy failed:', msg);
-      }
+    let deployResult = { deployed: false, url: null as string | null, projectId: null as string | null };
+    if (repo) {
+      deployResult = await deployToBuildWithLocus(page, repo) as typeof deployResult;
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://svc-moba0odjul0rjfgy.buildwithlocus.com';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const localUrl = `${appUrl}/s/${page.username}`;
-
-    console.log('[Publish] Using appUrl:', appUrl);
 
     return NextResponse.json({
       success: true,
-      url: deployUrl || localUrl,
-      deployedVia,
-      projectId,
+      url: deployResult.url || localUrl,
+      deployedVia: deployResult.deployed ? 'buildwithlocus' : 'local',
+      projectId: deployResult.projectId,
       storage: saved ? 'server' : 'local',
-      sessions,
+      checkoutSessions: sessions.length,
       page: {
         username: page.username,
         title: page.title,
         theme: page.theme,
         sections: page.sections.length,
-        checkouts: checkoutSections.length,
+        checkouts: extractCheckoutSections(page.sections).length,
       },
     });
   } catch (err: unknown) {
