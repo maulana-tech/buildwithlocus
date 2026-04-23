@@ -245,26 +245,33 @@ export default function PublicSitePage() {
   const [page, setPage] = useState<PageConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+useEffect(() => {
+    console.log('[Site] useEffect for:', id);
     async function load() {
       console.log('[Site] Starting load for:', id);
       try {
         const res = await fetch(`/api/sites?username=${id}`);
         console.log('[Site] Response status:', res.status);
         
-        if (!res.ok) {
-          console.log('[Site] Response not ok');
-          setLoading(false);
-          return;
+        if (res.ok) {
+          const data = await res.json();
+          console.log('[Site] Data sections:', data.sections?.length);
+          console.log('[Site] Data keys:', Object.keys(data));
+          
+          if (data.sections && data.sections.length > 0) {
+            console.log('[Site] Setting page');
+            setPage(data);
+            setLoading(false);
+            return;
+          }
         }
         
-        const data = await res.json();
-        console.log('[Site] Data received:', Object.keys(data));
-        
-        if (data.sections && data.sections.length > 0) {
-          setPage(data);
-        } else {
-          console.log('[Site] No sections in data');
+        const local = loadFromStorage(id);
+        console.log('[Site] Local:', local[id] ? 'found' : 'not found');
+        if (local && local[id]) {
+          setPage(local[id] as PageConfig);
+          setLoading(false);
+          return;
         }
       } catch (err) {
         console.error('[Site] Error:', err);
