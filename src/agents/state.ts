@@ -4,6 +4,16 @@ export type MerchantState = {
   verified: boolean;
 };
 
+export type SiteAnalytics = {
+  username: string;
+  title: string;
+  published_at: string;
+  views: number;
+  transactions: Transaction[];
+  revenue: number;
+  currency: string;
+};
+
 export type WidgetConfig = {
   widget_id: string;
   merchant_id: string;
@@ -30,6 +40,7 @@ export type Transaction = {
   method: string;
   amount: number;
   status: string;
+  created_at?: string;
 };
 
 export type BlockType = "profile" | "link" | "checkout";
