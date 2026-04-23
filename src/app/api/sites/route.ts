@@ -5,30 +5,12 @@ import path from 'path';
 const SITES_FILE = path.join(process.cwd(), 'data/sites.json');
 
 function loadSites(): Record<string, unknown> {
-  console.log('[Sites] Loading from:', SITES_FILE);
   try {
     if (fs.existsSync(SITES_FILE)) {
-      const raw = fs.readFileSync(SITES_FILE, 'utf-8');
-      console.log('[Sites] File exists, size:', raw.length);
-      return JSON.parse(raw);
+      return JSON.parse(fs.readFileSync(SITES_FILE, 'utf-8'));
     }
-  } catch (err) {
-    console.error('[Sites] Load error:', err);
-  }
-  console.log('[Sites] No file, returning empty');
+  } catch {}
   return {};
-}
-
-function saveSites(sites: Record<string, unknown>) {
-  try {
-    const dir = path.dirname(SITES_FILE);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    fs.writeFileSync(SITES_FILE, JSON.stringify(sites, null, 2));
-  } catch (err) {
-    console.error('[Sites] Write error:', err);
-  }
 }
 
 export async function GET(req: NextRequest) {
@@ -61,39 +43,24 @@ export async function POST(req: NextRequest) {
     }
 
     const sites = loadSites();
-    const siteData = sites[username] as Record<string, unknown> | undefined;
     sites[username] = {
       ...page,
       published_at: new Date().toISOString(),
     };
-    saveSites(sites);
+    
+    const dir = path.dirname(SITES_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(SITES_FILE, JSON.stringify(sites, null, 2));
 
     return NextResponse.json({
       success: true,
       username,
-      published_at: siteData?.published_at || new Date().toISOString(),
+      published_at: new Date().toISOString(),
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
-}
-
-export async function DELETE(req: NextRequest) {
-  const url = new URL(req.url);
-  const username = url.searchParams.get('username');
-
-  if (!username) {
-    return NextResponse.json({ error: 'username required' }, { status: 400 });
-  }
-
-  const sites = loadSites();
-  if (!sites[username]) {
-    return NextResponse.json({ error: 'Site not found' }, { status: 404 });
-  }
-
-  delete sites[username];
-  saveSites(sites);
-
-  return NextResponse.json({ success: true, username });
 }

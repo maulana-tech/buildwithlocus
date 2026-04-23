@@ -77,10 +77,13 @@ function FooterSection({ section, theme }: { section: Extract<PageSection, { typ
   );
 }
 
-export default function SitePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function SitePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
+  const id = params.id;
+  
   const [page, setPage] = useState<PageConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -88,18 +91,25 @@ export default function SitePage({ params }: { params: Promise<{ id: string }> }
         const res = await fetch(`/api/sites?username=${id}`);
         if (res.ok) {
           const data = await res.json();
-          if (data.sections?.length) setPage(data);
+          if (data.sections?.length) {
+            setPage(data);
+            setLoading(false);
+            return;
+          }
         }
         const local = loadFromStorage(id);
         if (local[id]) setPage(local[id] as PageConfig);
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        setError(String(e));
+      }
       setLoading(false);
     }
     load();
   }, [id]);
 
-  if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
-  if (!page) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', padding: '40px' }}><h1>404 - Site not found</h1></div>;
+  if (loading) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading {id}...</div>;
+  if (error) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', padding: '40px' }}><h1>Error: {error}</h1></div>;
+  if (!page) return <div style={{ minHeight: '100vh', background: '#0a0a0c', color: '#fff', padding: '40px' }}><h1>404 - Site not found for {id}</h1></div>;
 
   return (
     <div style={{ minHeight: '100vh', background: THEME_STYLES[page.theme]?.bg || '#fff' }}>
