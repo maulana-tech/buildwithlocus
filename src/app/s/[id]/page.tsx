@@ -29,10 +29,13 @@ async function fetchFromServer(username: string): Promise<PageConfig | null> {
   if (typeof window === 'undefined') return null;
   try {
     const res = await fetch(`/api/sites?username=${username}`);
+    console.log('[Site] API response status:', res.status);
     if (!res.ok) return null;
     const data = await res.json();
+    console.log('[Site] API data:', JSON.stringify(data).slice(0, 200));
     return data as PageConfig;
-  } catch {
+  } catch (err) {
+    console.error('[Site] Fetch error:', err);
     return null;
   }
 }
